@@ -2,6 +2,116 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:8000/api';
 
+// --- Componente Tarjeta Libro (Book Card) ---
+const CursoBookCard = ({ curso, area, onEdit, onDelete, index }) => {
+    // Paleta de colores con valores hex directos (evita el bug de purge de Tailwind JIT)
+    const colors = [
+        { bg: '#1e293b', spine: '#0f172a', text: '#f1f5f9', bmBg: '#fbbf24' }, // Slate oscuro
+        { bg: '#a855f7', spine: '#9333ea', text: '#ffffff', bmBg: '#fde68a' }, // Morado
+        { bg: '#f43f5e', spine: '#e11d48', text: '#ffffff', bmBg: '#fef08a' }, // Rosa/Rojo
+        { bg: '#10b981', spine: '#059669', text: '#ffffff', bmBg: '#fbbf24' }, // Esmeralda
+        { bg: '#3b82f6', spine: '#2563eb', text: '#ffffff', bmBg: '#fde68a' }, // Azul
+        { bg: '#f59e0b', spine: '#d97706', text: '#1c1917', bmBg: '#fda4af' }, // Ámbar
+        { bg: '#06b6d4', spine: '#0891b2', text: '#ffffff', bmBg: '#fde68a' }, // Cyan
+        { bg: '#ec4899', spine: '#db2777', text: '#ffffff', bmBg: '#fef9c3' }, // Rosa fucsia
+        { bg: '#8b5cf6', spine: '#7c3aed', text: '#ffffff', bmBg: '#fbbf24' }, // Violeta
+        { bg: '#14b8a6', spine: '#0d9488', text: '#ffffff', bmBg: '#fde68a' }, // Teal
+        { bg: '#ef4444', spine: '#dc2626', text: '#ffffff', bmBg: '#fef08a' }, // Rojo vivo
+        { bg: '#6366f1', spine: '#4f46e5', text: '#ffffff', bmBg: '#fda4af' }, // Índigo
+    ];
+    const c = colors[index % colors.length];
+
+    return (
+        <div className="w-full flex justify-center animate-fade-in" style={{ perspective: '1000px' }}>
+            {/* Wrapper interno: libro + botones en fila */}
+            <div className="group relative flex items-start gap-2">
+
+                {/* Contenedor del Libro */}
+                <div
+                    className="relative w-[160px] md:w-[180px] h-[240px] md:h-[260px] rounded-r-xl rounded-l-md transition-all duration-500 group-hover:-translate-y-4 group-hover:shadow-[15px_20px_25px_rgba(0,0,0,0.25)] cursor-pointer flex-shrink-0"
+                    style={{
+                        backgroundColor: c.bg,
+                        boxShadow: '10px 10px 15px rgba(0,0,0,0.2)',
+                        transformStyle: 'preserve-3d',
+                    }}
+                    onClick={() => onEdit(curso)}
+                >
+                    {/* Lomo del libro */}
+                    <div
+                        className="absolute left-0 top-0 bottom-0 w-6 rounded-l-md z-20"
+                        style={{ backgroundColor: c.spine, boxShadow: 'inset -2px 0 4px rgba(0,0,0,0.2)' }}
+                    >
+                        <div className="absolute top-4 bottom-4 left-2 w-0.5 bg-white/10 rounded-full"></div>
+                    </div>
+
+                    {/* Detalles de la portada */}
+                    <div className="absolute inset-0 ml-6 p-4 md:p-5 flex flex-col items-center text-center z-20">
+                        <div
+                            className="text-[9px] font-bold uppercase tracking-[0.15em] mt-1 md:mt-2 line-clamp-2"
+                            style={{ color: c.text, opacity: 0.8 }}
+                        >
+                            {area ? area.nombre_area || area.nombre : 'Sin Área'}
+                        </div>
+
+                        <div className="flex-1 flex items-center justify-center w-full">
+                            <h3
+                                className="text-[17px] md:text-xl font-black leading-snug drop-shadow-md px-1"
+                                style={{ color: c.text }}
+                            >
+                                {curso.nombre_curso}
+                            </h3>
+                        </div>
+
+                        <div
+                            className="text-[10px] font-bold mb-2 md:mb-3 border-t border-white/20 pt-2 w-1/2"
+                            style={{ color: c.text, opacity: 0.6 }}
+                        >
+                            ID: {curso.id_curso}
+                        </div>
+                    </div>
+
+                    {/* Marcador (Bookmark) */}
+                    <div
+                        className="absolute -bottom-4 right-6 w-8 h-10 z-10 transition-all duration-300 group-hover:h-14 group-hover:-bottom-8 drop-shadow-md"
+                        style={{ backgroundColor: c.bmBg }}
+                    >
+                        <div
+                            className="absolute -bottom-3 left-0 w-0 h-0 border-l-[16px] border-r-[16px] border-b-[12px] border-b-transparent"
+                            style={{ borderLeftColor: c.bmBg, borderRightColor: c.bmBg }}
+                        ></div>
+                    </div>
+
+                    {/* Páginas (Bordes de hojas) */}
+                    <div className="absolute top-1 bottom-1 right-[-4px] w-1 bg-white rounded-r-sm z-0" style={{ boxShadow: 'inset 1px 0 2px rgba(0,0,0,0.1)' }}></div>
+                    <div className="absolute top-2 bottom-2 right-[-6px] w-1 bg-slate-100 rounded-r-sm z-0"></div>
+
+                    {/* Brillo de portada */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 rounded-r-xl rounded-l-md pointer-events-none z-30"></div>
+                </div>
+
+                {/* Acciones — siempre visibles a la derecha del libro */}
+                <div className="flex flex-col gap-2 pt-2 flex-shrink-0">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEdit(curso); }}
+                        title="Editar"
+                        className="p-2.5 bg-white text-hx-purple rounded-full shadow-lg hover:bg-purple-50 hover:scale-110 transition-all cursor-pointer"
+                    >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(curso.id_curso); }}
+                        title="Eliminar"
+                        className="p-2.5 bg-white text-red-500 rounded-full shadow-lg hover:bg-red-50 hover:scale-110 transition-all cursor-pointer"
+                    >
+                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
 export default function CursosManager() {
     const [cursos, setCursos] = useState([]);
     const [areas, setAreas] = useState([]);
@@ -20,12 +130,18 @@ export default function CursosManager() {
     });
 
     // ── Cargar cursos y áreas del backend al montar ──
-    const fetchDatos = async () => {
+    const fetchDatos = async (signal) => {
         try {
             setLoading(true);
             const [resCursos, resAreas] = await Promise.all([
-                fetch(`${API_BASE}/cursos`).catch(() => ({ ok: false, json: async () => [] })),
-                fetch(`${API_BASE}/areas`).catch(() => ({ ok: false, json: async () => [] }))
+                fetch(`${API_BASE}/cursos`, { signal }).catch((e) => {
+                    if (e.name === 'AbortError') throw e;
+                    return { ok: false, json: async () => [] };
+                }),
+                fetch(`${API_BASE}/areas`, { signal }).catch((e) => {
+                    if (e.name === 'AbortError') throw e;
+                    return { ok: false, json: async () => [] };
+                }),
             ]);
 
             if (resCursos.ok) {
@@ -40,7 +156,8 @@ export default function CursosManager() {
 
             setError(null);
         } catch (err) {
-            console.warn("No se pudo obtener datos del backend.", err);
+            if (err.name === 'AbortError') return; // navegación: ignorar silenciosamente
+            console.warn('No se pudo obtener datos del backend.', err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -48,8 +165,11 @@ export default function CursosManager() {
     };
 
     useEffect(() => {
-        fetchDatos();
+        const controller = new AbortController();
+        fetchDatos(controller.signal);
+        return () => controller.abort(); // limpieza al desmontar
     }, []);
+
 
     // ── Abrir modal para nuevo curso ──
     const abrirModalNueva = () => {
@@ -128,20 +248,52 @@ export default function CursosManager() {
     return (
         <div className="w-full space-y-8 animate-fade-in relative">
 
-            {/* Header y Acción Principal */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-[#111827] tracking-tight">Directorio de Cursos</h1>
-                    <p className="text-[#64748B] mt-2 text-sm max-w-xl">
-                        Gestiona y explora todas las asignaturas de la institución en un formato rápido.
+            {/* Cabecera Superior (Banner + Espacio Derecho) */}
+            <div className="flex flex-col md:flex-row gap-6">
+                {/* Banner Principal (Izquierda) */}
+                <div className="md:w-2/3 bg-gradient-to-r from-hx-purple via-purple-500 to-fuchsia-400 rounded-[24px] p-8 text-white shadow-md relative overflow-hidden flex flex-col justify-center min-h-[180px]">
+                    {/* Formas abstractas decorativas */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/20 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
+                    <div className="absolute bottom-0 right-32 w-32 h-32 bg-hx-purple/40 rounded-full blur-xl translate-y-1/4"></div>
+
+                    <div className="relative z-10 flex justify-between items-start">
+                        <div className="max-w-md">
+                            <h2 className="text-2xl md:text-3xl font-black mb-2 tracking-tight drop-shadow-sm text-white">
+                                Directorio de Cursos
+                            </h2>
+                            <p className="text-white/90 text-[13px] font-medium mb-6 leading-relaxed max-w-sm drop-shadow-sm">
+                                Gestiona y explora todas las asignaturas de la institución. Registra nuevos cursos y asígnalos a sus áreas académicas.
+                            </p>
+
+                            <button
+                                onClick={abrirModalNueva}
+                                className="bg-white text-hx-purple hover:bg-slate-50 font-extrabold py-2.5 px-6 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm w-max">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                                Añadir Nuevo Curso
+                            </button>
+                        </div>
+
+                        {/* Logo decorativo estilo libros */}
+                        <div className="hidden sm:flex text-white/90 opacity-80 pt-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                                <path d="M6.5 2v20"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Espacio Derecho Reservado */}
+                <div className="md:w-1/3 bg-white border-2 border-slate-200 border-dashed rounded-[24px] flex flex-col items-center justify-center p-8 min-h-[180px]">
+                    <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center text-purple-300 mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    </div>
+                    <p className="text-slate-400 font-extrabold text-sm">Biblioteca Virtual</p>
+                    <p className="text-slate-400/70 text-xs mt-1 text-center font-medium max-w-[160px]">
+                        Explora la colección de asignaturas disponibles.
                     </p>
                 </div>
-                <button
-                    onClick={abrirModalNueva}
-                    className="cursor-pointer bg-[#790EEC] hover:bg-[#790EEC]/90 text-white font-bold py-2.5 px-5 rounded-xl shadow-sm hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-                    Añadir Nuevo
-                </button>
             </div>
 
             {/* Banner de Error Menor */}
@@ -155,63 +307,45 @@ export default function CursosManager() {
             {/* Estado de Carga */}
             {loading && cursos.length === 0 && (
                 <div className="flex justify-center py-12">
-                    <div className="w-8 h-8 border-4 border-[#790EEC]/30 border-t-[#790EEC] rounded-full animate-spin"></div>
+                    <div className="w-8 h-8 border-4 border-hx-purple/30 border-t-hx-purple rounded-full animate-spin"></div>
                 </div>
             )}
 
-            {/* Grid de Cursos (Estilo Tarjetas) */}
-            <div className="pt-2">
-                {!loading && cursos.length === 0 && (
-                    <div className="text-center py-16 text-[#64748B] font-medium bg-white rounded-3xl border border-slate-100 shadow-sm">
-                        Todavía no hay ningún curso en la base de datos.
+            {/* Grid de Cursos (Estilo Tarjetas Libro) */}
+            {!loading && (
+                <div className="pt-4">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-xl font-black text-[#111827]">Biblioteca de Cursos ({cursos.length})</h2>
                     </div>
-                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">
-                    {cursos.map((curso, idx) => {
-                        const localId = curso.id_curso || `ID-${idx + 1}`;
-                        const areaEncontrada = areas.find(a => a.id_area === curso.id_area);
-
-                        return (
-                            <div key={localId} className="bg-white rounded-[24px] relative shadow-lg hover:shadow-xl transition-shadow border-[3px] border-[#790EEC] p-6 pt-8 mt-5 flex flex-col">
-
-                                {/* Pestaña/Ribbon flotante superior izquierda */}
-                                <div className="absolute -top-5 left-6 bg-[#790EEC] text-white w-14 h-[64px] rounded-b-2xl shadow-md flex items-center justify-center flex-col z-10 border-[3px] border-white">
-                                    {/* Icono de curso (reemplaza el número 01, 02...) */}
-                                    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
-                                </div>
-
-                                {/* Contenido Header: Nombre y Acciones (icono a la derecha de DATA) */}
-                                <div className="flex items-start justify-between mt-6 mb-3">
-                                    <h3 className="font-black text-[#111827] text-[17px] leading-tight line-clamp-2 pr-2" title={curso.nombre_curso || "Sin Nombre"}>
-                                        {curso.nombre_curso || "Sin Nombre"}
-                                    </h3>
-
-                                    {/* Botones de acción minimalistas a la derecha (como el icono en la imagen de DATA 01) */}
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        <button onClick={() => abrirModalEdicion(curso)} className="cursor-pointer text-slate-400 hover:text-[#790EEC] p-1.5 rounded-lg hover:bg-purple-50 transition-colors" title="Editar">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                                        </button>
-                                        <button onClick={() => eliminarCurso(localId)} className="cursor-pointer text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Eliminar">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Párrafo simulando el texto Lorem Ipsum de la imagen, con los datos reales */}
-                                <div className="text-slate-500 text-[13px] leading-relaxed mb-6 flex-1">
-                                    <p className="mb-1.5">
-                                        <strong className="text-slate-700 font-bold">Área:</strong> {areaEncontrada ? areaEncontrada.nombre_area : "Sin asignar"}
-                                    </p>
-                                    <p>
-                                        <strong className="text-slate-700 font-bold">Código:</strong> {localId}
-                                    </p>
-                                </div>
+                    {cursos.length === 0 ? (
+                        <div className="bg-slate-50 border-2 border-slate-200 border-dashed rounded-[32px] p-16 text-center">
+                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <svg width="32" height="32" fill="none" stroke="#cbd5e1" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
                             </div>
-                        );
-                    })}
+                            <h3 className="text-xl font-black text-slate-800">No hay cursos registrados</h3>
+                            <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">Comienza creando tu primer curso usando el botón en la cabecera superior.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-x-10 gap-y-16 px-6 py-6">
+                            {cursos.map((curso, index) => {
+                                const localId = curso.id_curso || `ID-${index + 1}`;
+                                const areaEncontrada = areas.find(a => a.id_area === curso.id_area);
+                                return (
+                                    <CursoBookCard
+                                        key={localId}
+                                        curso={curso}
+                                        area={areaEncontrada}
+                                        index={index}
+                                        onEdit={abrirModalEdicion}
+                                        onDelete={eliminarCurso}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
-            </div>
+            )}
 
             {/* Modal Flotante de Formulario */}
             {isModalOpen && (
@@ -237,7 +371,7 @@ export default function CursosManager() {
                                     placeholder="Ej. Matemática Básica"
                                     value={nuevoCurso.nombre_curso}
                                     onChange={(e) => setNuevoCurso({ ...nuevoCurso, nombre_curso: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 outline-none transition-all text-sm font-medium text-[#111827] placeholder:text-slate-300"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-hx-purple focus:ring-4 focus:ring-hx-purple/10 outline-none transition-all text-sm font-medium text-[#111827] placeholder:text-slate-300"
                                 />
                             </div>
 
@@ -247,12 +381,12 @@ export default function CursosManager() {
                                     required
                                     value={nuevoCurso.id_area}
                                     onChange={(e) => setNuevoCurso({ ...nuevoCurso, id_area: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 outline-none transition-all text-sm font-medium text-[#111827] bg-white cursor-pointer"
+                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-hx-purple focus:ring-4 focus:ring-hx-purple/10 outline-none transition-all text-sm font-medium text-[#111827] bg-white cursor-pointer"
                                 >
                                     <option value="" disabled>-- Selecciona un área --</option>
                                     {areas.map(area => (
                                         <option key={area.id_area} value={area.id_area}>
-                                            {area.nombre_area}
+                                            {area.nombre || area.nombre_area}
                                         </option>
                                     ))}
                                 </select>
@@ -269,7 +403,7 @@ export default function CursosManager() {
                                 <button
                                     type="submit"
                                     disabled={guardando}
-                                    className="cursor-pointer flex-1 py-3 px-4 bg-[#790EEC] hover:bg-[#790EEC]/90 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    className="cursor-pointer flex-1 py-3 px-4 bg-hx-purple hover:bg-hx-purple/90 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {guardando ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
