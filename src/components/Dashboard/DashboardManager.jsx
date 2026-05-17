@@ -1,9 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE = 'http://localhost:8000/api';
 
 export default function DashboardManager() {
+    const [profesoresCount, setProfesoresCount] = useState(null);
+
     const today = new Date();
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     const dateString = today.toLocaleDateString('es-ES', options);
+
+    useEffect(() => {
+        const fetchProfesoresCount = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/profesores`);
+                if (!res.ok) return;
+                const data = await res.json();
+                setProfesoresCount(Array.isArray(data) ? data.length : 0);
+            } catch {
+                setProfesoresCount(null);
+            }
+        };
+
+        fetchProfesoresCount();
+        window.addEventListener('horarix_data_updated', fetchProfesoresCount);
+        return () => window.removeEventListener('horarix_data_updated', fetchProfesoresCount);
+    }, []);
+
+    const profesoresLabel = profesoresCount === null ? '—' : String(profesoresCount);
 
     return (
         <div className="w-full max-w-[1400px] mx-auto animate-fade-in pb-10">
@@ -43,7 +66,7 @@ export default function DashboardManager() {
                                     </div>
                                 </div>
                                 <div className="bg-white text-[#1A5AD7] flex flex-col items-center justify-center min-w-[50px] h-[50px] rounded-2xl shadow-sm">
-                                    <span className="font-black text-xl leading-none">42</span>
+                                    <span className="font-black text-xl leading-none">{profesoresLabel}</span>
                                 </div>
                             </div>
 

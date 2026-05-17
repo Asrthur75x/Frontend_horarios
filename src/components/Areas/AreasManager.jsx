@@ -21,13 +21,13 @@ const AreaFolderCard = ({ area, onEdit, onDelete }) => {
             </div>
 
             {/* Folder Tab */}
-            <div className="absolute bottom-[110px] left-0 w-[55%] h-[28px] bg-hx-blue rounded-t-[16px] z-10">
-                {/* Inverse curve (using exact hex of hx-blue #51B4E8) */}
-                <div className="absolute -right-5 bottom-0 w-5 h-5 bg-transparent rounded-bl-[12px] shadow-[-10px_10px_0_0_#51B4E8]"></div>
+            <div className="absolute bottom-[110px] left-0 w-[55%] h-[28px] bg-hx-purple rounded-t-[16px] z-10">
+                {/* Inverse curve (using exact hex of hx-purple #790EEC) */}
+                <div className="absolute -right-5 bottom-0 w-5 h-5 bg-transparent rounded-bl-[12px] shadow-[-10px_10px_0_0_#790EEC]"></div>
             </div>
 
             {/* Folder Front Body */}
-            <div className="absolute bottom-0 left-0 right-0 h-[110px] bg-hx-blue rounded-b-[24px] rounded-tr-[24px] z-20 p-6 flex flex-col justify-end shadow-sm group-hover:shadow-[0_15px_30px_-10px_rgba(81,180,232,0.6)] transition-shadow duration-300">
+            <div className="absolute bottom-0 left-0 right-0 h-[110px] bg-hx-purple rounded-b-[24px] rounded-tr-[24px] z-20 p-6 flex flex-col justify-end shadow-sm group-hover:shadow-[0_15px_30px_-10px_rgba(121,14,236,0.6)] transition-shadow duration-300">
                 <h3 className="text-xl font-black text-white truncate leading-tight">
                     {area.nombre}
                 </h3>
@@ -167,11 +167,11 @@ export default function AreasManager() {
             {/* Cabecera Superior (Banner + Espacio Derecho) */}
             <div className="flex flex-col md:flex-row gap-6">
                 {/* Banner Principal (Izquierda) */}
-                <div className="md:w-2/3 bg-gradient-to-r from-hx-blue via-sky-400 to-sky-300 rounded-[24px] p-8 text-white shadow-md relative overflow-hidden flex flex-col justify-center min-h-[180px]">
+                <div className="md:w-2/3 bg-gradient-to-r from-hx-purple via-purple-600 to-indigo-600 rounded-[24px] p-8 text-white shadow-md relative overflow-hidden flex flex-col justify-center min-h-[180px]">
                     {/* Formas abstractas decorativas */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/20 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
-                    <div className="absolute bottom-0 right-32 w-32 h-32 bg-hx-blue/40 rounded-full blur-xl translate-y-1/4"></div>
+                    <div className="absolute bottom-0 right-32 w-32 h-32 bg-hx-purple/40 rounded-full blur-xl translate-y-1/4"></div>
 
                     <div className="relative z-10 flex justify-between items-start">
                         <div className="max-w-md">
@@ -184,7 +184,7 @@ export default function AreasManager() {
 
                             <button
                                 onClick={abrirModalNueva}
-                                className="bg-white text-hx-blue hover:bg-slate-50 font-extrabold py-2.5 px-6 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm w-max">
+                                className="bg-white text-hx-purple hover:bg-slate-50 font-extrabold py-2.5 px-6 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 text-sm w-max">
                                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
                                 Añadir Nueva Área
                             </button>

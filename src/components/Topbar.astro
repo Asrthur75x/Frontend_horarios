@@ -3,11 +3,11 @@
 const pathname = Astro.url.pathname;
 let pageTitle = "Dashboard";
 
-if (pathname.includes("/areas")) pageTitle = "Áreas Académicas";
-else if (pathname.includes("/cursos")) pageTitle = "Cursos";
-else if (pathname.includes("/profesores")) pageTitle = "Profesores";
-else if (pathname.includes("/aulas")) pageTitle = "Aulas";
-else if (pathname.includes("/grados")) pageTitle = "Grados";
+if (pathname.includes("/areas") || pathname.includes("/cursos") || pathname.includes("/planes")) {
+    pageTitle = "Módulo Académico";
+} else if (pathname.includes("/profesores") || pathname.includes("/carga-academica") || pathname.includes("/tutorias") || pathname.includes("/asignacion-cursos")) {
+    pageTitle = "Módulo Docente";
+}
 ---
 
 <header

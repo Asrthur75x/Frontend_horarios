@@ -1,5 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import { ClientRouter } from "astro:transitions";
 import Sidebar from "../components/Sidebar.jsx";
 import Topbar from "../components/Topbar.astro";
 import "../styles/global.css";
@@ -19,11 +19,11 @@ const currentPath = Astro.url.pathname;
 				window.location.href = "/login";
 			}
 		</script>
-        <ClientRouter />
+		<ClientRouter />
 	</head>
 	<body
 		class="text-[#757680] font-sans antialiased h-screen overflow-hidden pt-20 transition-colors duration-500"
-        style={`background-color: ${currentPath.startsWith('/cursos') ? 'var(--color-hx-purple)' : 'var(--color-hx-blue)'};`}
+		style={`background-color: ${currentPath === "/" || currentPath.startsWith("/dashboard") ? "var(--color-hx-teal)" : currentPath.startsWith("/areas") || currentPath.startsWith("/cursos") || currentPath.startsWith("/planes") ? "var(--color-hx-purple)" : "var(--color-hx-blue)"};`}
 	>
 		<Topbar />
 		<Sidebar client:load currentPath={currentPath} />
@@ -31,7 +31,7 @@ const currentPath = Astro.url.pathname;
 		<!-- El margen izquierdo de 64 equivale al w-64 (16rem/256px) del Sidebar fixado -->
 		<div
 			class="ml-64 flex flex-col h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden"
-            style="background-color: #fff;"
+			style="background-color: #fff;"
 		>
 			<main class="p-8 flex-1">
 				<slot />
@@ -39,3 +39,17 @@ const currentPath = Astro.url.pathname;
 		</div>
 	</body>
 </html>
+body.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 40%, #eff6ff
+100%)'; } } applyBodyGradient(); document.addEventListener('astro:after-swap', applyBodyGradient);
+
+<Topbar />
+<Sidebar client:load currentPath={currentPath} />
+
+<!-- El margen izquierdo de 64 equivale al w-64 (16rem/256px) del Sidebar fixado -->
+<div
+	class="ml-64 flex flex-col h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden bg-transparent"
+>
+	<main class="p-8 flex-1">
+		<slot />
+	</main>
+</div>
