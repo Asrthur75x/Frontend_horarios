@@ -50,7 +50,7 @@ export default function Paso2DiasGrados({ data, setData }) {
             </p>
 
             <div className="w-full max-w-[480px] space-y-8">
-                
+
                 {/* DÍAS */}
                 <div className="w-full">
                     <label className="block text-[13px] font-bold text-slate-400 mb-3 uppercase tracking-wider text-center">
@@ -64,8 +64,8 @@ export default function Paso2DiasGrados({ data, setData }) {
                                     key={dia.id}
                                     onClick={() => handleDiaToggle(dia)}
                                     className={`p-3 rounded-xl border-2 font-bold transition-all text-sm flex items-center justify-center gap-2 cursor-pointer
-                                        ${isSelected 
-                                            ? 'border-hx-blue text-hx-blue bg-hx-blue/10' 
+                                        ${isSelected
+                                            ? 'border-hx-blue text-hx-blue bg-hx-blue/10'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                                 >
                                     {isSelected && (
@@ -91,8 +91,8 @@ export default function Paso2DiasGrados({ data, setData }) {
                                     key={grado}
                                     onClick={() => handleGradoToggle(grado)}
                                     className={`p-4 rounded-xl border-2 font-bold transition-all text-lg flex items-center justify-center cursor-pointer
-                                        ${isSelected 
-                                            ? 'border-[#F3C252] text-[#d49e24] bg-[#F3C252]/10' 
+                                        ${isSelected
+                                            ? 'border-hx-blue text-hx-blue bg-hx-blue/10'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                                 >
                                     {grado}°

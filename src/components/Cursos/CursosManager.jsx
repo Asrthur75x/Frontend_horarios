@@ -195,6 +195,7 @@ export default function CursosManager() {
         const confirmacion = window.confirm("¿Seguro que deseas eliminar este curso?");
         if (confirmacion) {
             setCursos(cursos.filter(c => c.id_curso !== id));
+            window.dispatchEvent(new CustomEvent('horarix_data_updated'));
         }
     };
 
@@ -229,11 +230,14 @@ export default function CursosManager() {
                     });
                     if (res.ok) {
                         await fetchDatos();
+                        window.dispatchEvent(new CustomEvent('horarix_data_updated'));
                     } else {
                         setCursos([...cursos, objNuevo]);
+                        window.dispatchEvent(new CustomEvent('horarix_data_updated'));
                     }
                 } catch (apiErr) {
                     setCursos([...cursos, objNuevo]);
+                    window.dispatchEvent(new CustomEvent('horarix_data_updated'));
                 }
             }
 

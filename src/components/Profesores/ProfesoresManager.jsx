@@ -37,7 +37,9 @@ const ProfesorCard = ({ prof, sedesStr, cantDispo, onEdit, onDelete, isSelected,
                     <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center gap-1 text-slate-400" title="Bloques Disponibles">
                             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                            <span className="text-[10px] font-bold">{cantDispo} Blq.</span>
+                            <span className={`text-[10px] font-bold ${cantDispo === 'Total' ? 'text-hx-blue' : ''}`}>
+                                {cantDispo === 'Total' ? 'Dispo. Total' : `${cantDispo} Blq.`}
+                            </span>
                         </div>
                         <div className="flex items-center gap-1 text-slate-400" title="ID Profesor">
                             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -88,6 +90,7 @@ export default function ProfesoresManager() {
     const [dias, setDias] = useState([]);
     const [turnos, setTurnos] = useState([]);
     const [bloques, setBloques] = useState([]);
+    const [maxBloquesDia, setMaxBloquesDia] = useState(10);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -185,7 +188,7 @@ export default function ProfesoresManager() {
             setLoading(true);
             const endpoints = [
                 'profesores', 'sedes', 'profesor-sedes',
-                'profesor-disponibilidad', 'profesor-preferencia', 'dias', 'turnos', 'bloques'
+                'profesor-disponibilidad', 'profesor-preferencia', 'dias', 'turnos', 'bloques', 'grado-dia-config'
             ];
 
             const responses = await Promise.all(
@@ -208,6 +211,11 @@ export default function ProfesoresManager() {
             setDias(data[5] || []);
             setTurnos(data[6] || []);
             setBloques(data[7] || []);
+
+            // Calcular el máximo de bloques por día desde grado-dia-config
+            const gradoDiaConfigs = data[8] || [];
+            const maxBlq = gradoDiaConfigs.reduce((acc, c) => Math.max(acc, c.bloques_dia || 0), 0);
+            setMaxBloquesDia(maxBlq > 0 ? maxBlq : 10);
 
             setError(null);
         } catch (err) {
@@ -235,7 +243,12 @@ export default function ProfesoresManager() {
     };
 
     const getCantDispo = (id_prof) => {
-        return disponibilidades.filter(x => x.id_profesor === id_prof).length;
+        const cant = disponibilidades.filter(x => x.id_profesor === id_prof).length;
+        if (cant === 0) {
+            const prefs = preferencias.filter(x => x.id_profesor === id_prof).length;
+            if (prefs === 0) return 'Total';
+        }
+        return cant;
     };
 
     // ── Abrir Modal ──
@@ -416,8 +429,9 @@ export default function ProfesoresManager() {
                 if (!isDispo) setFormDispo(prev => [...prev, { id_dia, id_turno, nro_bloque }]);
                 setFormPreferencia(prev => [...prev, { id_dia, id_turno, nro_bloque }]);
             } else {
-                // Quitar de preferido, pero se queda disponible
+                // Quitar de preferido Y de disponible → vuelve a "No disponible"
                 setFormPreferencia(prev => prev.filter(x => !(x.id_dia === id_dia && x.id_turno === id_turno && x.nro_bloque === nro_bloque)));
+                setFormDispo(prev => prev.filter(x => !(x.id_dia === id_dia && x.id_turno === id_turno && x.nro_bloque === nro_bloque)));
             }
         }
     };
@@ -487,6 +501,7 @@ export default function ProfesoresManager() {
                     });
                 }
             }
+
             await fetchDatos();
             setIsModalOpen(false);
         } catch (err) {
@@ -830,8 +845,7 @@ export default function ProfesoresManager() {
                                             </div>
                                         </div>
 
-                                        {!esDisponibilidadTotal && (
-                                            <>
+                                        <div className={`transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
                                                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-9 h-9 bg-slate-200/50 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
@@ -879,15 +893,38 @@ export default function ProfesoresManager() {
                                                         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                                     </button>
                                                 </div>
-                                            </>
-                                        )}
+                                        </div>
                                     </div>
 
                                     {/* Contenedor de Turnos para evitar desbordamiento */}
-                                    <div className={`space-y-6 transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-                                        {turnos.map(turno => {
+                                    {(() => {
+                                        // Construir la lista de turnos a mostrar:
+                                        // Si hay turnos del API úsalos, si no, extraer desde las disponibilidades/preferencias
+                                        let turnosRender = turnos.length > 0 ? turnos : [];
+                                        if (turnosRender.length === 0) {
+                                            const allEntries = [...formDispo, ...formPreferencia];
+                                            const idsUnicos = [...new Set(allEntries.map(x => x.id_turno))];
+                                            turnosRender = idsUnicos.map(id => ({ id_turno: id, nombre: `Turno ${id}` }));
+                                        }
+                                        // Si aún no hay nada (nuevo docente sin datos), crear un turno genérico
+                                        if (turnosRender.length === 0) {
+                                            turnosRender = [{ id_turno: 1, nombre: 'Turno General' }];
+                                        }
+                                        return (
+                                        <div className={`space-y-6 transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+                                        {turnosRender.map(turno => {
+                                            // Bloques del API para este turno
                                             const bloquesTurno = bloques.filter(b => b.id_turno === turno.id_turno);
-                                            if (bloquesTurno.length === 0) return null;
+                                            // Usar: bloques del API si existen, si no generar desde grado-dia-config
+                                            const maxFromDispo = Math.max(
+                                                ...formDispo.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
+                                                ...formPreferencia.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
+                                                0
+                                            );
+                                            const maxBloques = Math.max(maxFromDispo, maxBloquesDia);
+                                            const bloquesRender = bloquesTurno.length > 0
+                                                ? bloquesTurno
+                                                : Array.from({ length: maxBloques }, (_, i) => ({ numero_bloque: i + 1, id_bloque: `temp-${turno.id_turno}-${i}` }));
 
                                             return (
                                                 <div key={turno.id_turno} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -906,7 +943,7 @@ export default function ProfesoresManager() {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {bloquesTurno.map((b, bi) => (
+                                                                    {bloquesRender.map((b, bi) => (
                                                                         <tr key={b.id_bloque} className={bi % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                                                             <td className="p-3 text-sm font-black text-slate-400 whitespace-nowrap text-center bg-slate-50 border-r border-slate-100">
                                                                                 {b.numero_bloque}
@@ -947,7 +984,9 @@ export default function ProfesoresManager() {
                                                 </div>
                                             );
                                         })}
-                                    </div>
+                                        </div>
+                                        );
+                                    })()}
 
                                     <div className="flex gap-4 pt-4 border-t border-slate-100">
                                         <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>

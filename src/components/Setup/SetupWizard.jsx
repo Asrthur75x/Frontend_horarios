@@ -57,6 +57,8 @@ export default function SetupWizard() {
     const [isSaving, setIsSaving] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [entered, setEntered] = useState(false);
+    const [editingSteps, setEditingSteps] = useState([]);
+    const [wizardDataBackup, setWizardDataBackup] = useState(null);
 
     const totalSteps = wizardData.turnos && wizardData.turnos.length > 1 ? 6 : 5;
 
@@ -67,7 +69,7 @@ export default function SetupWizard() {
             localStorage.removeItem('horarix_wizard_step');
             localStorage.removeItem('horarix_wizard_data');
             localStorage.removeItem('horarix_wizard_saved_steps');
-        } catch (_) {}
+        } catch (_) { }
 
         // Cargar datos inicialmente
         setStep(getSavedStep());
@@ -101,7 +103,7 @@ export default function SetupWizard() {
                         try {
                             const sedesRes = await fetch('http://127.0.0.1:8000/api/sedes');
                             const sedesDb = await sedesRes.json();
-                            
+
                             const turnosRes = await fetch('http://127.0.0.1:8000/api/turnos');
                             const turnosDb = await turnosRes.json();
 
@@ -116,7 +118,7 @@ export default function SetupWizard() {
 
                             const diasRes = await fetch('http://127.0.0.1:8000/api/dias');
                             const diasDb = await diasRes.json();
-                            
+
                             const gradosRes = await fetch('http://127.0.0.1:8000/api/grados');
                             const gradosDb = await gradosRes.json();
 
@@ -231,8 +233,11 @@ export default function SetupWizard() {
                 });
             }
 
+            let sedesResDb = await fetch('http://127.0.0.1:8000/api/sedes');
+            let sedesDbList = await sedesResDb.json();
+
             for (let sedeNombre of wizardData.sedes) {
-                if (sedeNombre.trim()) {
+                if (sedeNombre.trim() && !sedesDbList.some(s => s.nombre_sede === sedeNombre)) {
                     await fetch('http://127.0.0.1:8000/api/sedes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -241,15 +246,21 @@ export default function SetupWizard() {
                 }
             }
 
+            let turnosResDb = await fetch('http://127.0.0.1:8000/api/turnos');
+            let turnosDbList = await turnosResDb.json();
+
             for (let t of wizardData.turnos) {
-                await fetch('http://127.0.0.1:8000/api/turnos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre: t })
-                });
+                if (!turnosDbList.some(dbT => dbT.nombre === t)) {
+                    await fetch('http://127.0.0.1:8000/api/turnos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre: t })
+                    });
+                }
             }
 
             setSavedSteps(prev => prev.includes(1) ? prev : [...prev, 1]);
+            setEditingSteps(prev => prev.filter(s => s !== 1));
             setStep(prev => prev + 1);
         } catch (error) {
             console.error("Error al guardar en el backend:", error);
@@ -299,12 +310,12 @@ export default function SetupWizard() {
             // Obtener los IDs reales de la base de datos
             const gradosRes = await fetch('http://127.0.0.1:8000/api/grados');
             const gradosDb = await gradosRes.json();
-            
+
             const diasRes = await fetch('http://127.0.0.1:8000/api/dias');
             const diasDb = await diasRes.json();
 
             const { gradoDiaConfig } = wizardData;
-            
+
             // Verificamos si config existe y tiene datos
             if (!gradoDiaConfig || Object.keys(gradoDiaConfig).length === 0) {
                 console.warn("No hay configuración de bloques para guardar.");
@@ -322,7 +333,7 @@ export default function SetupWizard() {
                     const [gradoNumStr, diaIdStr] = key.split('-');
                     const gradoNum = parseInt(gradoNumStr);
                     const diaIdLocal = parseInt(diaIdStr);
-                    
+
                     // Buscar el ID real
                     const realGrado = gradosDb.find(g => g.numero === gradoNum);
                     const realDia = diasDb.find(d => d.orden === diaIdLocal);
@@ -337,7 +348,7 @@ export default function SetupWizard() {
                                 bloques_dia: bloques
                             })
                         });
-                        
+
                         if (!response.ok) {
                             const errorText = await response.text();
                             throw new Error(`Error en el backend: ${response.status} - ${errorText}`);
@@ -364,7 +375,7 @@ export default function SetupWizard() {
         try {
             const sedesRes = await fetch('http://127.0.0.1:8000/api/sedes');
             const sedesDb = await sedesRes.json();
-            
+
             const gradosRes = await fetch('http://127.0.0.1:8000/api/grados');
             const gradosDb = await gradosRes.json();
 
@@ -442,16 +453,16 @@ export default function SetupWizard() {
     const autoAssignTurnoUnico = async () => {
         const seccionesRes = await fetch('http://127.0.0.1:8000/api/secciones');
         const seccionesDb = await seccionesRes.json();
-        
+
         const turnosRes = await fetch('http://127.0.0.1:8000/api/turnos');
         const turnosDb = await turnosRes.json();
-        
+
         const diasRes = await fetch('http://127.0.0.1:8000/api/dias');
         const diasDb = await diasRes.json();
-        
+
         if (turnosDb.length === 0) return;
         const turnoId = turnosDb[0].id_turno;
-        
+
         for (const sec of seccionesDb) {
             for (const dia of diasDb) {
                 await fetch('http://127.0.0.1:8000/api/seccion-turno', {
@@ -472,16 +483,16 @@ export default function SetupWizard() {
         try {
             const seccionesRes = await fetch('http://127.0.0.1:8000/api/secciones');
             const seccionesDb = await seccionesRes.json();
-            
+
             const turnosRes = await fetch('http://127.0.0.1:8000/api/turnos');
             const turnosDb = await turnosRes.json();
-            
+
             const diasRes = await fetch('http://127.0.0.1:8000/api/dias');
             const diasDb = await diasRes.json();
-            
+
             const sedesRes = await fetch('http://127.0.0.1:8000/api/sedes');
             const sedesDb = await sedesRes.json();
-            
+
             const gradosRes = await fetch('http://127.0.0.1:8000/api/grados');
             const gradosDb = await gradosRes.json();
 
@@ -569,8 +580,8 @@ export default function SetupWizard() {
                 return;
             }
 
-            // Si el paso 1 ya fue guardado, solo avanzar sin volver a guardar
-            if (savedSteps.includes(1)) {
+            // Si el paso 1 ya fue guardado y NO se está editando, solo avanzar sin volver a guardar
+            if (savedSteps.includes(1) && !editingSteps.includes(1)) {
                 setStep(prev => prev + 1);
             } else {
                 saveStep1Data();
@@ -592,7 +603,7 @@ export default function SetupWizard() {
             }
         } else if (step === 3) {
             setErrorMsg('');
-            
+
             // Validación: Asegurar que todos los grados tengan al menos un bloque asignado
             const { gradoDiaConfig, grados } = wizardData;
             if (!gradoDiaConfig || Object.keys(gradoDiaConfig).length === 0) {
@@ -614,7 +625,7 @@ export default function SetupWizard() {
             }
 
             if (gradosSinBloques.length > 0) {
-                const mensaje = gradosSinBloques.length === 1 
+                const mensaje = gradosSinBloques.length === 1
                     ? `El grado ${gradosSinBloques[0]}° no tiene ningún bloque asignado.`
                     : `Los grados ${gradosSinBloques.join(', ')}° no tienen bloques asignados.`;
                 setErrorMsg(`${mensaje} Asigna al menos un bloque en algún día de la semana.`);
@@ -628,7 +639,7 @@ export default function SetupWizard() {
             }
         } else if (step === 4) {
             setErrorMsg('');
-            
+
             // Validación: Asegurar que todos los grados en todas las sedes tengan al menos 1 sección
             const { secciones, grados, sedes } = wizardData;
             if (!secciones) {
@@ -821,7 +832,22 @@ export default function SetupWizard() {
 
                         <div className="flex-grow flex flex-col justify-center w-full">
                             {step === 1 && (
-                                <Paso1Institucion data={wizardData} setData={setWizardData} />
+                                <Paso1Institucion 
+                                    data={wizardData} 
+                                    setData={setWizardData} 
+                                    isSaved={savedSteps.includes(1) && !editingSteps.includes(1)}
+                                    onEnableEdit={() => {
+                                        setWizardDataBackup(JSON.parse(JSON.stringify(wizardData)));
+                                        setEditingSteps(prev => [...prev, 1]);
+                                    }}
+                                    isEditing={editingSteps.includes(1)}
+                                    onCancelEdit={() => {
+                                        if (wizardDataBackup) {
+                                            setWizardData(wizardDataBackup);
+                                        }
+                                        setEditingSteps(prev => prev.filter(s => s !== 1));
+                                    }}
+                                />
                             )}
                             {step === 2 && (
                                 <div className="animate-fade-in" style={{ animationDuration: '0.6s' }}>
@@ -873,10 +899,10 @@ export default function SetupWizard() {
                                     <button
                                         onClick={handleBack}
                                         className={`cursor-pointer w-1/2 py-4 rounded-xl font-bold text-sm tracking-widest transition-all border-2 
-                                            ${step === 2 ? 'border-hx-blue text-hx-blue hover:bg-hx-blue/5' 
-                                            : step === 3 ? 'border-hx-yellow text-[#d49e24] hover:bg-hx-yellow/10'
-                                            : step === 4 ? 'border-hx-pink text-[#c25071] hover:bg-hx-pink/10'
-                                            : 'border-hx-teal text-hx-teal hover:bg-hx-teal/10'}`}
+                                            ${step === 2 ? 'border-hx-blue text-hx-blue hover:bg-hx-blue/5'
+                                                : step === 3 ? 'border-hx-yellow text-[#d49e24] hover:bg-hx-yellow/10'
+                                                    : step === 4 ? 'border-hx-pink text-[#c25071] hover:bg-hx-pink/10'
+                                                        : 'border-hx-teal text-hx-teal hover:bg-hx-teal/10'}`}
                                     >
                                         VOLVER
                                     </button>
@@ -909,7 +935,7 @@ export default function SetupWizard() {
                                 <div style={{
                                     height: '100%',
                                     width: `${(step / totalSteps) * 100}%`,
-                                    background: step === 1 ? 'var(--color-hx-teal)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
+                                    background: step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
                                     borderRadius: 999, transition: 'all 0.5s ease'
                                 }}></div>
                             </div>

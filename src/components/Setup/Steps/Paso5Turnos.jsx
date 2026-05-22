@@ -119,23 +119,23 @@ export default function Paso5Turnos({ data, setData }) {
                 }));
             }
         } else {
-            // Collapse: pick the most common turno as global value
+            // Collapse ONLY if all days have the exact same turno.
             const current = data.seccionTurno[activeSede]?.[grado]?.[seccion];
             if (typeof current === 'object') {
                 const values = Object.values(current);
-                const majority = values.sort((a, b) =>
-                    values.filter(v => v === b).length - values.filter(v => v === a).length
-                )[0] || data.turnos[0];
-                setData(prev => ({
-                    ...prev,
-                    seccionTurno: {
-                        ...prev.seccionTurno,
-                        [activeSede]: {
-                            ...prev.seccionTurno[activeSede],
-                            [grado]: { ...prev.seccionTurno[activeSede][grado], [seccion]: majority }
+                const allSame = values.every(v => v === values[0]);
+                if (allSame) {
+                    setData(prev => ({
+                        ...prev,
+                        seccionTurno: {
+                            ...prev.seccionTurno,
+                            [activeSede]: {
+                                ...prev.seccionTurno[activeSede],
+                                [grado]: { ...prev.seccionTurno[activeSede][grado], [seccion]: values[0] }
+                            }
                         }
-                    }
-                }));
+                    }));
+                }
             }
         }
         setAdvancedMode(prev => ({ ...prev, [key]: isEntering }));
@@ -200,7 +200,16 @@ export default function Paso5Turnos({ data, setData }) {
                                     const key = `${grado}__${seccion}`;
                                     const isAdvanced = !!advancedMode[key];
                                     const valor = data.seccionTurno[activeSede]?.[grado]?.[seccion];
-                                    const turnoGlobal = typeof valor === 'string' ? valor : data.turnos[0];
+                                    
+                                    const isMixed = typeof valor === 'object' && new Set(Object.values(valor)).size > 1;
+                                    const turnoGlobal = typeof valor === 'string' ? valor : (isMixed ? null : Object.values(valor)[0] || data.turnos[0]);
+
+                                    const getBtnClass = () => {
+                                        if (isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#10CFAE] border-[#10CFAE] shadow-md shadow-[#10CFAE]/30 hover:bg-[#0db89a]';
+                                        if (isAdvanced && !isMixed) return 'px-3 py-1.5 text-slate-500 bg-white border-slate-300 hover:bg-slate-100 shadow-sm';
+                                        if (!isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#10CFAE] border-[#10CFAE] shadow-md shadow-[#10CFAE]/30 hover:bg-[#0db89a]';
+                                        return 'px-3 py-2 text-[#10CFAE] bg-[#10CFAE]/8 border-[#10CFAE]/40 hover:bg-[#10CFAE]/15 hover:border-[#10CFAE] shadow-sm';
+                                    };
 
                                     return (
                                         <div key={seccion}
@@ -234,20 +243,20 @@ export default function Paso5Turnos({ data, setData }) {
                                                 {puedeVariarPorDia && (
                                                     <button
                                                         onClick={() => toggleAdvanced(grado, seccion)}
-                                                        className={`cursor-pointer flex items-center gap-2 transition-all duration-200 rounded-xl border-2 ${isAdvanced
-                                                            ? 'px-3 py-1.5 text-white bg-[#10CFAE] border-[#10CFAE] shadow-md shadow-[#10CFAE]/30 hover:bg-[#0db89a]'
-                                                            : 'px-3 py-2 text-[#10CFAE] bg-[#10CFAE]/8 border-[#10CFAE]/40 hover:bg-[#10CFAE]/15 hover:border-[#10CFAE] shadow-sm'
-                                                            }`}
+                                                        className={`cursor-pointer flex items-center gap-2 transition-all duration-200 rounded-xl border-2 ${getBtnClass()}`}
                                                     >
                                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                                             <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
                                                         </svg>
-                                                        {isAdvanced
-                                                            ? <span className="text-xs font-bold">✕</span>
-                                                            : <span className="text-[12px] font-black ">
-                                                                Variar por día
+                                                        {isAdvanced ? (
+                                                            isMixed 
+                                                                ? <span className="text-[12px] font-black">✓ Listo</span>
+                                                                : <span className="text-[12px] font-black">✕ Cerrar</span>
+                                                        ) : (
+                                                            <span className="text-[12px] font-black">
+                                                                Variar por día {isMixed && "(Activo)"}
                                                             </span>
-                                                        }
+                                                        )}
                                                     </button>
                                                 )}
                                             </div>

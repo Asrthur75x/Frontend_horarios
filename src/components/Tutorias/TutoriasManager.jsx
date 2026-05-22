@@ -167,6 +167,16 @@ export default function TutoriasManager() {
     const tutorActual = selectedSeccion ? getTutorDeSeccion(selectedSeccion.id_seccion) : null;
     const tutoriaActual = selectedSeccion ? getTutoriaDeSeccion(selectedSeccion.id_seccion) : null;
 
+    const isConfigReady = !loading && secciones.length > 0 && tutorias.length >= secciones.length;
+
+    useEffect(() => {
+        if (!loading && secciones.length > 0) {
+            console.log(`Tutorias: Secciones=${secciones.length}, Tutorias=${tutorias.length}, Ready=${isConfigReady}`);
+            localStorage.setItem('configReady', isConfigReady ? 'true' : 'false');
+            window.dispatchEvent(new Event('horarix_config_ready'));
+        }
+    }, [isConfigReady, loading, secciones.length, tutorias.length]);
+
     return (
         <div className="w-full relative pb-16">
 
@@ -198,6 +208,8 @@ export default function TutoriasManager() {
                     </div>
                 </div>
             </div>
+
+
 
             {/* ── Grupos por Grado ── */}
             {!loading && (

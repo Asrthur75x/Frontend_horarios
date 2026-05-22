@@ -61,7 +61,9 @@ export default function Sidebar({ currentPath: initialPath = '' }) {
         ? 'var(--color-hx-teal)'
         : (currentPath.startsWith('/areas') || currentPath.startsWith('/cursos') || currentPath.startsWith('/planes'))
             ? 'var(--color-hx-purple)'
-            : 'var(--color-hx-blue)';
+            : currentPath.startsWith('/horarios')
+                ? 'var(--color-hx-red)'
+                : 'var(--color-hx-blue)';
 
     const activeItemStyle = {
         backgroundColor: '#fff',
@@ -177,7 +179,12 @@ export default function Sidebar({ currentPath: initialPath = '' }) {
     return (
         <aside
             className="w-64 flex flex-col justify-between fixed h-screen top-0 left-0 z-50 overflow-hidden shadow-2xl transition-colors duration-500"
-            style={{ backgroundColor: (currentPath === '' || currentPath === '/' || currentPath.startsWith('/dashboard')) ? 'var(--color-hx-teal)' : (currentPath.startsWith('/areas') || currentPath.startsWith('/cursos') || currentPath.startsWith('/planes')) ? 'var(--color-hx-purple)' : 'var(--color-hx-blue)' }}
+            style={{ backgroundColor:
+                (currentPath === '' || currentPath === '/' || currentPath.startsWith('/dashboard')) ? 'var(--color-hx-teal)'
+                : (currentPath.startsWith('/areas') || currentPath.startsWith('/cursos') || currentPath.startsWith('/planes')) ? 'var(--color-hx-purple)'
+                : currentPath.startsWith('/horarios') ? 'var(--color-hx-red)'
+                : 'var(--color-hx-blue)'
+            }}
         >
             <div className="pt-6 pb-4 flex flex-col h-full overflow-y-auto">
                 {/* Logo */}
@@ -194,6 +201,20 @@ export default function Sidebar({ currentPath: initialPath = '' }) {
                         icon={<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
                     />
                 </ul>
+
+                {/* ── MÓDULO HORARIOS (solo visible en /horarios) ── */}
+                {currentPath.startsWith('/horarios') && (
+                    <ul className="flex flex-col relative mb-4 flex-shrink-0">
+                        <li className="px-3 mb-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest px-4 pb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Centro de Horarios</p>
+                        </li>
+                        <MenuItem
+                            path="/horarios"
+                            label="Generar Horario"
+                            icon={<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
+                        />
+                    </ul>
+                )}
 
                 {/* ── MÓDULOS ── */}
                 <ul className="flex flex-col relative mb-4 flex-shrink-0 animate-fade-in-down">

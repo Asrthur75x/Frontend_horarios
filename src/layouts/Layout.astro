@@ -39,17 +39,3 @@ const currentPath = Astro.url.pathname;
 		</div>
 	</body>
 </html>
-body.style.background = 'linear-gradient(135deg, #f8fafc 0%, #ffffff 40%, #eff6ff
-100%)'; } } applyBodyGradient(); document.addEventListener('astro:after-swap', applyBodyGradient);
-
-<Topbar />
-<Sidebar client:load currentPath={currentPath} />
-
-<!-- El margen izquierdo de 64 equivale al w-64 (16rem/256px) del Sidebar fixado -->
-<div
-	class="ml-64 flex flex-col h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden bg-transparent"
->
-	<main class="p-8 flex-1">
-		<slot />
-	</main>
-</div>

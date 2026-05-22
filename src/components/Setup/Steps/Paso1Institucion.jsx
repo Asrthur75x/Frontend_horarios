@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Paso1Institucion({ data, setData }) {
+export default function Paso1Institucion({ data, setData, isSaved, onEnableEdit, isEditing, onCancelEdit }) {
 
     const handleNestedChange = (section, field, value) => {
         setData(prev => ({
@@ -71,15 +71,35 @@ export default function Paso1Institucion({ data, setData }) {
     };
 
     return (
-        <div className="w-full flex flex-col items-center animate-fade-in">
+        <div className="w-full flex flex-col items-center animate-fade-in pb-8">
             <h2 className="text-3xl lg:text-4xl font-extrabold text-[#111827] text-center mb-4 leading-tight">
                 ¡Bienvenido a HorariX!
             </h2>
-            <p className="text-slate-500 text-center mb-12 text-lg">
-                Ingresa la información principal de tu institución.
-            </p>
+            <div className="w-full max-w-[480px] flex flex-col items-end gap-5 mb-5">
+                <p className="text-slate-500 text-center text-lg m-0 w-full">
+                    Ingresa la información principal de tu institución.
+                </p>
+                {isSaved && (
+                    <button
+                        onClick={onEnableEdit}
+                        className="px-4 py-1.5 rounded-full border-2 border-[#790EEC] text-[#ffffff] text-sm font-bold bg-[#790EEC] hover:bg-[#6b0bc9] hover:border-[#6b0bc9] transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        Activar Edición
+                    </button>
+                )}
+                {isEditing && (
+                    <button
+                        onClick={onCancelEdit}
+                        className="px-4 py-1.5 rounded-full border-2 border-[#790EEC] text-slate-500 text-sm font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Cancelar Edición
+                    </button>
+                )}
+            </div>
 
-            <div className="w-full max-w-[480px] space-y-6">
+            <div className={`w-full max-w-[480px] space-y-6 ${isSaved ? 'opacity-60 pointer-events-none select-none grayscale-[20%]' : ''}`}>
 
                 {/* COLEGIO */}
                 <div className="w-full">
@@ -105,7 +125,7 @@ export default function Paso1Institucion({ data, setData }) {
                             onClick={() => handleSedeChoice(true)}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-sm cursor-pointer
                                 ${data.tipo_sede === true
-                                    ? 'border-[#10CFAE] text-[#0d9b83] bg-[#10CFAE]/10'
+                                    ? 'focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 bg-[#9061F9]/10 text-[#790EEC]'
                                     : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                         >
                             Sí, tenemos sedes
@@ -114,7 +134,7 @@ export default function Paso1Institucion({ data, setData }) {
                             onClick={() => handleSedeChoice(false)}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-sm cursor-pointer
                                 ${data.tipo_sede === false
-                                    ? 'border-[#F1A5B9] text-[#e33767] bg-[#F1A5B9]/10'
+                                    ? 'focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 bg-[#9061F9]/10 text-[#790EEC]'
                                     : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                         >
                             No, sede única
@@ -128,7 +148,7 @@ export default function Paso1Institucion({ data, setData }) {
                             </label>
                             <input
                                 type="text"
-                                className="w-full p-4 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#F1A5B9] focus:ring-4 focus:ring-[#F1A5B9]/10 transition-all text-center text-lg font-bold text-slate-800 placeholder-slate-300"
+                                className="w-full p-4 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 transition-all text-center text-lg font-bold text-slate-800 placeholder-slate-300"
                                 placeholder="Ej. Sede Principal"
                                 value={data.sedes[0] || ''}
                                 onChange={(e) => handleSedeNameChange(0, e.target.value)}
@@ -145,12 +165,12 @@ export default function Paso1Institucion({ data, setData }) {
                                 <input
                                     type="number"
                                     min="2"
-                                    className="w-full p-3 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#10CFAE] focus:ring-4 focus:ring-[#10CFAE]/10 transition-all text-center text-lg font-bold text-slate-800"
+                                    className="w-full p-3 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#790EEC] focus:ring-4 focus:ring-[#790EEC]/10 transition-all text-center text-lg font-bold text-slate-800"
                                     value={data.numero_sedes}
                                     onChange={handleNumeroSedes}
                                 />
                             </div>
-                            
+
                             <div className="space-y-3 mt-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                                 {data.sedes.map((sede, idx) => (
                                     <div key={idx} className="flex flex-col">
@@ -159,7 +179,7 @@ export default function Paso1Institucion({ data, setData }) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full p-3 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#10CFAE] focus:ring-2 focus:ring-[#10CFAE]/10 transition-all text-sm font-bold text-slate-800 placeholder-slate-300"
+                                            className="w-full p-3 rounded-xl border-2 border-slate-200 focus:outline-none focus:border-[#790EEC] focus:ring-4] focus:ring-4 focus:ring-[#790EEC]/10 transition-all text-sm font-bold text-slate-800 placeholder-slate-300"
                                             placeholder={idx === 0 ? "Ej. Sede Central" : `Ej. Sede ${idx + 1}`}
                                             value={sede}
                                             onChange={(e) => handleSedeNameChange(idx, e.target.value)}
@@ -184,8 +204,8 @@ export default function Paso1Institucion({ data, setData }) {
                                     key={turno}
                                     onClick={() => handleTurnoToggle(turno)}
                                     className={`p-4 rounded-xl border-2 font-bold transition-all text-sm flex items-center justify-center gap-2 cursor-pointer
-                                        ${isSelected 
-                                            ? 'border-[#51B4E8] text-[#2c8bbd] bg-[#51B4E8]/10' 
+                                        ${isSelected
+                                            ? 'border-[#790EEC] text-[#790EEC] bg-[#9061F9]/10'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                                 >
                                     {isSelected && (

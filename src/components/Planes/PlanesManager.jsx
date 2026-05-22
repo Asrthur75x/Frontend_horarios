@@ -174,6 +174,7 @@ export default function PlanesManager() {
             try {
                 await fetch(`${API_BASE}/planes/${id}`, { method: 'DELETE' });
                 setPlanes(planes.filter(p => p.id_plan !== id));
+                window.dispatchEvent(new CustomEvent('horarix_data_updated'));
             } catch (err) {
                 alert("Error al eliminar");
             }
@@ -233,6 +234,7 @@ export default function PlanesManager() {
                 });
             }
             await fetchDatos();
+            window.dispatchEvent(new CustomEvent('horarix_data_updated'));
             setIsModalOpen(false);
         } catch (err) {
             alert(`Error: ${err.message}`);
@@ -563,6 +565,7 @@ export default function PlanesManager() {
                                         });
                                     }
                                     await fetchDatos(new AbortController().signal);
+                                    window.dispatchEvent(new CustomEvent('horarix_data_updated'));
                                     setIsModalOpen(false);
                                 } catch { alert('Error al guardar'); }
                                 finally { setGuardando(false); }
