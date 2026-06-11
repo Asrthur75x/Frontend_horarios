@@ -16,7 +16,7 @@ export default function SidebarHorarios() {
 
     const activeItemStyle = {
         backgroundColor: '#fff',
-        color: 'var(--color-hx-red)',
+        color: 'var(--color-hx-purple)',
         borderTopLeftRadius: '32px',
         borderBottomLeftRadius: '32px',
         position: 'relative',
@@ -64,21 +64,16 @@ export default function SidebarHorarios() {
     return (
         <aside
             className="w-64 flex flex-col justify-between fixed h-screen top-0 left-0 z-50 overflow-hidden shadow-2xl transition-colors"
-            style={{ backgroundColor: 'var(--color-hx-red)' }}
+            style={{ backgroundColor: 'var(--color-hx-purple)' }}
         >
             <div className="pt-6 pb-4 flex flex-col h-full overflow-y-auto">
                 {/* Logo */}
                 <div className="px-8 mb-8 flex items-center gap-3 flex-shrink-0">
-                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-black text-xl shadow-md" style={{ color: 'var(--color-hx-red)' }}>H</div>
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-black text-xl shadow-md" style={{ color: 'var(--color-hx-purple)' }}>H</div>
                     <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">HorariX</h1>
                 </div>
 
-                {/* Etiqueta de módulo */}
-                <div className="px-8 mb-3 flex-shrink-0">
-                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>
-                        Centro de Horarios
-                    </p>
-                </div>
+
 
                 {/* Menú de Horarios */}
                 <ul className="flex flex-col relative flex-shrink-0">

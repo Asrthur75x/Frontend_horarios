@@ -68,7 +68,7 @@ export default function Login() {
         >
             {/* ===== LEFT PANEL ===== */}
             <div
-                className="hidden lg:flex bg-[#10CFAE] relative flex-col justify-center items-center z-10 shadow-2xl"
+                className="hidden lg:flex bg-hx-purple relative flex-col justify-center items-center z-10 shadow-2xl"
                 style={{
                     width: '35%',
                     flexShrink: 0,
@@ -83,7 +83,7 @@ export default function Login() {
                     overflow: 'hidden', pointerEvents: 'none',
                 }}>
                     <svg viewBox="0 0 100 1000" preserveAspectRatio="none"
-                        style={{ width: '100%', height: '100%', fill: '#10CFAE', display: 'block' }}>
+                        style={{ width: '100%', height: '100%', fill: 'var(--color-hx-purple)', display: 'block' }}>
                         <path d="M0,0 L0,1000 L20,1000 C150,750 -50,250 20,0 Z"></path>
                     </svg>
                 </div>
@@ -103,7 +103,7 @@ export default function Login() {
 
                 <div className="relative z-10 p-12 w-full flex flex-col items-center">
                     {/* Logo Hx */}
-                    <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center font-bold text-[#10CFAE] text-4xl shadow-2xl mb-12 transition-transform duration-500 hover:scale-110 hover:rotate-6">
+                    <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center font-bold text-hx-purple text-4xl shadow-2xl mb-12 transition-transform duration-500 hover:scale-110 hover:rotate-6">
                         Hx
                     </div>
 
@@ -166,17 +166,17 @@ export default function Login() {
                 <div style={{ position: 'absolute', bottom: '-50px', left: '-50px', width: 240, height: 240, background: '#F3C252', opacity: 0.13, borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none' }} />
                 <div style={{ position: 'absolute', bottom: '30%', right: '-30px', width: 180, height: 180, background: '#F1A5B9', opacity: 0.12, borderRadius: '50%', filter: 'blur(50px)', pointerEvents: 'none' }} />
                 <div style={{ width: '100%', maxWidth: 380, padding: '0 32px' }}>
-                    <h2 className="text-4xl font-extrabold text-[#10CFAE] mb-12 text-center tracking-tight">
+                    <h2 className="text-4xl font-extrabold text-hx-purple mb-12 text-center tracking-tight">
                         INICIAR SESIÓN
                     </h2>
 
                     <form onSubmit={handleLogin} className="space-y-8">
                         {/* Correo */}
                         <div>
-                            <label className="block text-[11px] font-bold text-[#10CFAE] uppercase tracking-widest mb-1 opacity-80">
+                            <label className="block text-[11px] font-bold text-hx-purple uppercase tracking-widest mb-1 opacity-80">
                                 Correo Electrónico
                             </label>
-                            <div className="flex items-center border-b-[3px] border-slate-100 py-2 focus-within:border-[#10CFAE] transition-colors">
+                            <div className="flex items-center border-b-[3px] border-slate-100 py-2 focus-within:border-hx-purple transition-colors">
                                 <input
                                     type="email"
                                     className="appearance-none bg-transparent border-none w-full text-slate-800 mr-3 py-1 px-2 leading-tight focus:outline-none font-bold text-lg"
@@ -185,7 +185,7 @@ export default function Login() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
-                                <svg width="20" height="20" fill="none" stroke="#10CFAE" strokeWidth="2.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                                <svg width="20" height="20" fill="none" stroke="var(--color-hx-purple)" strokeWidth="2.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </div>
@@ -193,10 +193,10 @@ export default function Login() {
 
                         {/* Contraseña */}
                         <div>
-                            <label className="block text-[11px] font-bold text-[#10CFAE] uppercase tracking-widest mb-1 opacity-80">
+                            <label className="block text-[11px] font-bold text-hx-purple uppercase tracking-widest mb-1 opacity-80">
                                 Contraseña
                             </label>
-                            <div className="flex items-center border-b-[3px] border-slate-100 py-2 focus-within:border-[#10CFAE] transition-colors">
+                            <div className="flex items-center border-b-[3px] border-slate-100 py-2 focus-within:border-hx-purple transition-colors">
                                 <input
                                     type="password"
                                     className="appearance-none bg-transparent border-none w-full text-slate-800 mr-3 py-1 px-2 leading-tight focus:outline-none font-bold text-lg tracking-widest"
@@ -205,7 +205,7 @@ export default function Login() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
-                                <svg width="20" height="20" fill="none" stroke="#10CFAE" strokeWidth="2.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                                <svg width="20" height="20" fill="none" stroke="var(--color-hx-purple)" strokeWidth="2.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                                 </svg>
                             </div>
@@ -223,7 +223,7 @@ export default function Login() {
                                 disabled={isLoading || isExiting}
                                 style={{
                                     width: '100%',
-                                    background: (isLoading || isExiting) ? 'rgba(16,207,174,0.5)' : 'linear-gradient(to right, #10CFAE, #0eab90)',
+                                    background: (isLoading || isExiting) ? 'rgba(121,14,236,0.5)' : 'var(--color-hx-purple)',
                                     borderRadius: 9999,
                                     padding: '16px 32px',
                                     color: 'white',
@@ -232,7 +232,7 @@ export default function Login() {
                                     border: 'none',
                                     cursor: (isLoading || isExiting) ? 'not-allowed' : 'pointer',
                                     transition: 'all 0.3s ease',
-                                    boxShadow: '0 10px 30px -10px rgba(16,207,174,0.5)',
+                                    boxShadow: '0 10px 30px -10px rgba(121,14,236,0.5)',
                                 }}
                             >
                                 {isLoading ? 'CARGANDO...' : isExiting ? 'ENTRANDO...' : 'Entrar'}

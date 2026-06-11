@@ -65,8 +65,8 @@ export default function Paso5Turnos({ data, setData }) {
             seccionTurno: {
                 ...prev.seccionTurno,
                 [activeSede]: {
-                    ...prev.seccionTurno[activeSede],
-                    [grado]: { ...prev.seccionTurno[activeSede][grado], [seccion]: turno }
+                    ...(prev.seccionTurno[activeSede] || {}),
+                    [grado]: { ...(prev.seccionTurno[activeSede]?.[grado] || {}), [seccion]: turno }
                 }
             }
         }));
@@ -79,21 +79,24 @@ export default function Paso5Turnos({ data, setData }) {
         // Build the per-day object. If it was a string, expand only the relevant days.
         const currentObj = typeof current === 'object' && current !== null
             ? current
-            : diasConBloques.reduce((acc, d) => ({ ...acc, [d.id]: current || data.turnos[0] }), {});
+            : diasConBloques.reduce((acc, d) => ({ ...acc, [d.id]: current || null }), {});
 
-        setData(prev => ({
-            ...prev,
-            seccionTurno: {
-                ...prev.seccionTurno,
-                [activeSede]: {
-                    ...prev.seccionTurno[activeSede],
-                    [grado]: {
-                        ...prev.seccionTurno[activeSede][grado],
-                        [seccion]: { ...currentObj, [diaId]: turno }
+        setData(prev => {
+            const newTurno = currentObj[diaId] === turno ? null : turno;
+            return {
+                ...prev,
+                seccionTurno: {
+                    ...prev.seccionTurno,
+                    [activeSede]: {
+                        ...(prev.seccionTurno[activeSede] || {}),
+                        [grado]: {
+                            ...(prev.seccionTurno[activeSede]?.[grado] || {}),
+                            [seccion]: { ...currentObj, [diaId]: newTurno }
+                        }
                     }
                 }
-            }
-        }));
+            };
+        });
     };
 
     // Toggle advanced mode for a section card
@@ -113,7 +116,7 @@ export default function Paso5Turnos({ data, setData }) {
                         ...prev.seccionTurno,
                         [activeSede]: {
                             ...prev.seccionTurno[activeSede],
-                            [grado]: { ...prev.seccionTurno[activeSede][grado], [seccion]: expanded }
+                            [grado]: { ...(prev.seccionTurno[activeSede]?.[grado] || {}), [seccion]: expanded }
                         }
                     }
                 }));
@@ -131,7 +134,7 @@ export default function Paso5Turnos({ data, setData }) {
                             ...prev.seccionTurno,
                             [activeSede]: {
                                 ...prev.seccionTurno[activeSede],
-                                [grado]: { ...prev.seccionTurno[activeSede][grado], [seccion]: values[0] }
+                                [grado]: { ...(prev.seccionTurno[activeSede]?.[grado] || {}), [seccion]: values[0] }
                             }
                         }
                     }));
@@ -149,7 +152,7 @@ export default function Paso5Turnos({ data, setData }) {
             <p className="text-slate-500 text-center mb-6 text-base max-w-[480px]">
                 Selecciona a qué turno pertenece cada sección.{' '}
                 <span className="font-semibold text-slate-600">Si una sección cambia de turno según el día</span>
-                , usa el botón <span className="font-semibold text-[#10CFAE]">Variar por día</span>.
+                , usa el botón <span className="font-semibold text-[#790EEC]">Variar por día</span>.
             </p>
 
             {/* SEDES tabs */}
@@ -158,7 +161,7 @@ export default function Paso5Turnos({ data, setData }) {
                     {sedes.map(sede => (
                         <button key={sede} onClick={() => setActiveSede(sede)}
                             className={`cursor-pointer px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${activeSede === sede
-                                ? 'bg-[#10CFAE] text-white shadow-lg shadow-[#10CFAE]/30 scale-105'
+                                ? 'bg-[#790EEC] text-white shadow-lg shadow-[#790EEC]/30 scale-105'
                                 : 'bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-700'
                                 }`}>
                             Sede {sede}
@@ -205,22 +208,22 @@ export default function Paso5Turnos({ data, setData }) {
                                     const turnoGlobal = typeof valor === 'string' ? valor : (isMixed ? null : Object.values(valor)[0] || data.turnos[0]);
 
                                     const getBtnClass = () => {
-                                        if (isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#10CFAE] border-[#10CFAE] shadow-md shadow-[#10CFAE]/30 hover:bg-[#0db89a]';
+                                        if (isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#790EEC] border-[#790EEC] shadow-md shadow-[#790EEC]/30 hover:bg-[#790EEC]';
                                         if (isAdvanced && !isMixed) return 'px-3 py-1.5 text-slate-500 bg-white border-slate-300 hover:bg-slate-100 shadow-sm';
-                                        if (!isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#10CFAE] border-[#10CFAE] shadow-md shadow-[#10CFAE]/30 hover:bg-[#0db89a]';
-                                        return 'px-3 py-2 text-[#10CFAE] bg-[#10CFAE]/8 border-[#10CFAE]/40 hover:bg-[#10CFAE]/15 hover:border-[#10CFAE] shadow-sm';
+                                        if (!isAdvanced && isMixed) return 'px-3 py-1.5 text-white bg-[#790EEC] border-[#790EEC] shadow-md shadow-[#790EEC]/30 hover:bg-[#790EEC]';
+                                        return 'px-3 py-2 text-[#790EEC] bg-[#790EEC]/8 border-[#790EEC]/40 hover:bg-[#790EEC]/15 hover:border-[#790EEC] shadow-sm';
                                     };
 
                                     return (
                                         <div key={seccion}
-                                            className={`bg-white border-2 rounded-2xl p-3 shadow-sm flex flex-col gap-3 transition-all duration-300 ${isAdvanced ? 'border-[#10CFAE]/50 col-span-2 sm:col-span-3' : 'border-slate-100 items-center hover:border-[#10CFAE]/30'
+                                            className={`bg-white border-2 rounded-2xl p-3 shadow-sm flex flex-col gap-3 transition-all duration-300 ${isAdvanced ? 'border-[#790EEC]/50 col-span-2 sm:col-span-3' : 'border-slate-100 items-center hover:border-[#790EEC]/30'
                                                 }`}>
 
                                             {/* Header de la tarjeta */}
                                             <div className={`flex items-center ${isAdvanced ? 'justify-between' : 'flex-col gap-5 w-full'}`}>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Sección</span>
-                                                    <span className="text-xl font-black text-[#10CFAE]">{seccion}</span>
+                                                    <span className="text-xl font-black text-[#790EEC]">{seccion}</span>
                                                 </div>
 
                                                 {/* MODO SIMPLE: un selector de turno para todos los días */}
@@ -230,7 +233,7 @@ export default function Paso5Turnos({ data, setData }) {
                                                             <button key={turno}
                                                                 onClick={() => handleTurnoGlobal(grado, seccion, turno)}
                                                                 className={`cursor-pointer flex-1 min-w-0 px-2 py-2 rounded-lg text-xs font-bold transition-all border-2 ${turnoGlobal === turno
-                                                                    ? 'bg-[#10CFAE]/10 border-[#10CFAE] text-[#10CFAE]'
+                                                                    ? 'bg-[#790EEC]/10 border-[#790EEC] text-[#790EEC]'
                                                                     : 'bg-slate-50 border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600'
                                                                     }`}>
                                                                 {turno}
@@ -282,7 +285,7 @@ export default function Paso5Turnos({ data, setData }) {
                                                                         <button key={turno}
                                                                             onClick={() => handleTurnoPorDia(grado, seccion, dia.id, turno)}
                                                                             className={`cursor-pointer flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border-2 ${turnoDelDia === turno
-                                                                                ? 'bg-[#10CFAE]/10 border-[#10CFAE] text-[#10CFAE]'
+                                                                                ? 'bg-[#790EEC]/10 border-[#790EEC] text-[#790EEC]'
                                                                                 : 'bg-slate-50 border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600'
                                                                                 }`}>
                                                                             {turno}

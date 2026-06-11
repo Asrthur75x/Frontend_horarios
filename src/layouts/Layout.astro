@@ -8,11 +8,7 @@ import "../styles/global.css";
 const currentPath = Astro.url.pathname;
 const isHorarios = currentPath.startsWith("/horarios");
 
-const bodyBg = currentPath.startsWith("/ajustes")
-    ? "var(--color-hx-yellow)"
-    : currentPath.startsWith("/horarios")
-        ? "var(--color-hx-red)"
-        : "rgba(121, 14, 236, 0.95)";
+const bodyBg = "rgba(121, 14, 236, 0.95)";
 ---
 
 <!doctype html>

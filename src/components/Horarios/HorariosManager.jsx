@@ -19,7 +19,7 @@ const CURSO_COLORS = [
 ];
 
 // Color único para encabezados de días
-const DIA_COLOR = { bg: 'var(--color-hx-red)', text: '#ffffff' };
+const DIA_COLOR = { bg: 'var(--color-hx-purple)', text: '#ffffff' };
 
 export default function HorariosManager() {
     const [status, setStatus] = useState('loading');
@@ -206,7 +206,7 @@ export default function HorariosManager() {
 
     const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    const filteredAsignaciones = asignaciones.filter(a => 
+    const filteredAsignaciones = asignaciones.filter(a =>
         a.seccion_id === selectedSeccion
     );
 
@@ -220,29 +220,29 @@ export default function HorariosManager() {
 
     if (secActual) {
         const configSeccion = configGradoDia.filter(c => c.id_grado === secActual.id_grado && c.bloques_dia > 0);
-        
+
         if (configSeccion.length > 0) {
             const diasConfiguradosParaGrado = configSeccion.map(c => c.id_dia);
             gridDias = dias.filter(d => diasConfiguradosParaGrado.includes(d.id_dia));
-            
+
             const maxBlqSeccion = configSeccion.reduce((acc, c) => Math.max(acc, c.bloques_dia || 0), 0);
             blockNumbers = Array.from({ length: maxBlqSeccion > 0 ? maxBlqSeccion : maxBloquesDia }, (_, i) => i + 1);
         }
     }
 
     return (
-        <div className="w-full min-h-[calc(100vh-100px)] flex flex-col items-center justify-start animate-fade-in relative pb-10">
+        <div className={`w-full h-full flex flex-col items-center animate-fade-in relative ${status === 'empty' ? 'justify-center' : 'justify-start'}`}>
             {/* Panel de Filtros y Acciones Top */}
-            {(status === 'ready' || status === 'empty') && (
+            {status === 'ready' && (
                 <div className="w-full bg-white rounded-[24px] border border-slate-100 shadow-sm p-5 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-3">
                         {/* Filtro Grado */}
                         <div className="flex flex-col">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grado</label>
-                            <select 
-                                value={selectedGrado} 
+                            <select
+                                value={selectedGrado}
                                 onChange={e => setSelectedGrado(e.target.value)}
-                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-red"
+                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-purple"
                             >
                                 <option value="">Todos los Grados</option>
                                 {grados.map(g => (
@@ -253,10 +253,10 @@ export default function HorariosManager() {
                         {/* Filtro Sede */}
                         <div className="flex flex-col">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sede</label>
-                            <select 
-                                value={selectedSede} 
+                            <select
+                                value={selectedSede}
                                 onChange={e => setSelectedSede(e.target.value)}
-                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-red"
+                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-purple"
                             >
                                 <option value="">Todas las Sedes</option>
                                 {sedes.map(s => (
@@ -267,10 +267,10 @@ export default function HorariosManager() {
                         {/* Filtro Turno */}
                         <div className="flex flex-col">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Turno</label>
-                            <select 
-                                value={selectedTurno} 
+                            <select
+                                value={selectedTurno}
                                 onChange={e => setSelectedTurno(e.target.value)}
-                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-red"
+                                className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-3 py-2 outline-none focus:border-hx-purple"
                             >
                                 <option value="">Todos los Turnos</option>
                                 {turnos.map(t => (
@@ -278,7 +278,7 @@ export default function HorariosManager() {
                                 ))}
                             </select>
                         </div>
-                        
+
                         {/* Divisor Vertical */}
                         {status === 'ready' && filteredSecciones.length > 0 && (
                             <div className="hidden lg:block w-px h-10 bg-slate-200 mx-2"></div>
@@ -294,11 +294,10 @@ export default function HorariosManager() {
                                         return (
                                             <button key={sec.id_seccion}
                                                 onClick={() => setSelectedSeccion(`SEC_${sec.id_seccion}`)}
-                                                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all cursor-pointer border h-full flex items-center ${
-                                                    selectedSeccion === `SEC_${sec.id_seccion}`
-                                                        ? 'bg-[var(--color-hx-red)] text-white border-[var(--color-hx-red)] shadow-sm'
-                                                        : 'bg-white text-slate-500 border-slate-200 hover:border-red-400 hover:text-red-500'
-                                                }`}>
+                                                className={`px-3 py-1 rounded-lg text-sm font-bold transition-all cursor-pointer border h-full flex items-center ${selectedSeccion === `SEC_${sec.id_seccion}`
+                                                    ? 'bg-[var(--color-hx-purple)] text-white border-[var(--color-hx-purple)] shadow-sm'
+                                                    : 'bg-white text-slate-500 border-slate-200 hover:border-red-400 hover:text-red-500'
+                                                    }`}>
                                                 {secGrado ? `${secGrado.numero}° ` : ''}{sec.nombre}
                                             </button>
                                         );
@@ -309,13 +308,13 @@ export default function HorariosManager() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button 
-                            onClick={handleGenerar} 
-                            className="group relative flex items-center gap-2 px-6 py-3 bg-[var(--color-hx-red)] text-white font-black text-sm rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden"
+                        <button
+                            onClick={handleGenerar}
+                            className="group relative flex items-center gap-2 px-6 py-3 bg-[var(--color-hx-purple)] text-white font-black text-sm rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all overflow-hidden"
                         >
-                            <div className="absolute inset-0 w-full h-full -ml-16 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shine"/>
+                            <div className="absolute inset-0 w-full h-full -ml-16 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shine" />
                             <svg className="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span className="relative z-10 tracking-wide">Generar Nuevo Horario</span>
                         </button>
@@ -327,8 +326,8 @@ export default function HorariosManager() {
             {status === 'loading' && (
                 <div className="flex flex-col items-center justify-center gap-4 mt-20">
                     <div className="relative w-16 h-16">
-                        <div className="absolute inset-0 border-4 border-slate-100 rounded-full"/>
-                        <div className="absolute inset-0 border-4 border-hx-red rounded-full border-t-transparent animate-spin" style={{ animationDuration: '1s' }}/>
+                        <div className="absolute inset-0 border-4 border-slate-100 rounded-full" />
+                        <div className="absolute inset-0 border-4 border-hx-purple rounded-full border-t-transparent animate-spin" style={{ animationDuration: '1s' }} />
                     </div>
                     <p className="text-slate-400 text-sm font-semibold">Cargando horarios...</p>
                 </div>
@@ -336,24 +335,40 @@ export default function HorariosManager() {
 
             {/* Estado vacío */}
             {status === 'empty' && (
-                <div className="flex flex-col items-center justify-center max-w-2xl w-full mx-auto text-center p-12 bg-white rounded-[32px] border border-slate-100 shadow-xl relative overflow-hidden mt-10">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-hx-blue/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"/>
-                    <div className="absolute bottom-0 left-0 w-80 h-80 bg-hx-pink/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"/>
-                    <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="relative flex flex-col items-center justify-center max-w-2xl w-full mx-auto mt-6 p-8 rounded-[40px] overflow-hidden group transition-all duration-500">
+                    <div className="relative z-10 flex flex-col items-center text-center animate-fade-in-up w-full">
                         {errorMsg && (
-                            <div className="w-full bg-red-50 text-red-600 border border-red-200 p-4 rounded-xl mb-6 font-bold text-sm text-left whitespace-pre-wrap">
+                            <div className="w-full bg-red-50 text-red-600 border border-red-200 p-3 rounded-xl mb-4 font-bold text-sm text-left whitespace-pre-wrap">
                                 {errorMsg}
                             </div>
                         )}
-                        <div className="w-24 h-24 mb-8 bg-gradient-to-br from-indigo-500 via-hx-blue to-teal-400 rounded-3xl flex items-center justify-center shadow-lg shadow-hx-blue/20 rotate-3 hover:rotate-6 transition-transform duration-500">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
+
+                        <div className="w-40 h-40 mb-6 flex items-center justify-center drop-shadow-xl hover:scale-105 transition-transform duration-500">
+                            <img
+                                src="/imagen.svg"
+                                alt="Ilustración de horarios"
+                                className="w-full h-full object-contain"
+                            />
                         </div>
-                        <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Aún no hay horarios listos</h2>
-                        <p className="text-slate-500 text-[15px] font-medium max-w-md mx-auto mb-6 leading-relaxed">
-                            Haz clic en el botón superior para calcular y generar las combinaciones de horario.
+
+                        <h2 className="text-[28px] leading-tight font-black text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-500 mb-3 tracking-tight">
+                            Aún no hay horarios listos
+                        </h2>
+
+                        <p className="text-slate-500 text-[15px] font-medium max-w-[420px] mx-auto leading-relaxed mb-8">
+                            Parece que todavía no has armado tus horarios. Haz clic en el botón inferior y nosotros haremos la magia por ti.
                         </p>
+
+                        <button 
+                            onClick={handleGenerar} 
+                            className="group relative flex items-center justify-center gap-2 px-8 py-4 bg-[var(--color-hx-purple)] text-white font-black text-lg rounded-2xl hover:shadow-xl hover:-translate-y-1 transition-all overflow-hidden w-full max-w-[320px] mx-auto"
+                        >
+                            <div className="absolute inset-0 w-full h-full -ml-16 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shine" />
+                            <svg className="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span className="relative z-10 tracking-wide">Generar Horarios</span>
+                        </button>
                     </div>
                 </div>
             )}
@@ -385,10 +400,10 @@ export default function HorariosManager() {
                     <div className="w-full space-y-3">
                         {loadingMessages.map((msg, index) => (
                             <div key={index} className={`flex items-center gap-4 transition-all duration-500 ${index < loadingStep ? 'opacity-100' : index === loadingStep ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden m-0'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${index < loadingStep ? 'bg-green-100 text-green-500' : 'bg-hx-red/10 text-hx-red'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${index < loadingStep ? 'bg-green-100 text-green-500' : 'bg-hx-purple/10 text-hx-purple'}`}>
                                     {index < loadingStep
-                                        ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                        : <div className="w-2.5 h-2.5 rounded-full bg-hx-red animate-ping"/>
+                                        ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                        : <div className="w-2.5 h-2.5 rounded-full bg-hx-purple animate-ping" />
                                     }
                                 </div>
                                 <p className={`font-semibold text-[15px] ${index < loadingStep ? 'text-slate-400' : 'text-slate-800'}`}>{msg}</p>
@@ -479,7 +494,7 @@ export default function HorariosManager() {
                                                         return (
                                                             <td key={dia.id_dia} className="py-1 px-1" style={{ verticalAlign: 'middle' }}>
                                                                 <div className="rounded-xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center" style={{ height: 'calc(100px - 8px)' }}>
-                                                                    <div className="w-1 h-1 rounded-full bg-slate-300"/>
+                                                                    <div className="w-1 h-1 rounded-full bg-slate-300" />
                                                                 </div>
                                                             </td>
                                                         );
@@ -503,7 +518,7 @@ export default function HorariosManager() {
                                                 return (
                                                     <span key={cid} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border-2"
                                                         style={{ backgroundColor: col.pastel, borderColor: col.solid, color: col.text }}>
-                                                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: col.solid }}/>
+                                                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: col.solid }} />
                                                         {getCurso(cid)}
                                                     </span>
                                                 );

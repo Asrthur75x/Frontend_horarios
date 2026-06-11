@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Paso1Institucion from './Steps/Paso1Institucion';
 import Paso2DiasGrados from './Steps/Paso2DiasGrados';
 import Paso3GradoDiaConfig from './Steps/Paso3GradoDiaConfig';
@@ -11,18 +11,14 @@ const DEFAULT_DATA = {
     numero_sedes: 1,
     sedes: [''],
     turnos: [],
-    dias: [
-        { id: 1, nombre: 'Lunes' },
-        { id: 2, nombre: 'Martes' },
-        { id: 3, nombre: 'Miércoles' },
-        { id: 4, nombre: 'Jueves' },
-        { id: 5, nombre: 'Viernes' }
-    ],
+    dias: [],
     grados: [],
     gradoDiaConfig: null,
     secciones: null,
     seccionTurno: null
 };
+
+
 
 function getSavedStep() {
     if (typeof window === 'undefined') return 1;
@@ -54,6 +50,24 @@ export default function SetupWizard() {
     const [savedSteps, setSavedSteps] = useState([]);
     const [dataLoaded, setDataLoaded] = useState(false); // guardia para no sobreescribir localStorage en el primer render
     const [errorMsg, setErrorMsg] = useState('');
+    const errorTimeoutRef = useRef(null);
+
+    const showError = (msg) => {
+        setErrorMsg(msg);
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+        }
+        errorTimeoutRef.current = setTimeout(() => {
+            setErrorMsg('');
+        }, 4000);
+    };
+
+    useEffect(() => {
+        setErrorMsg('');
+        if (errorTimeoutRef.current) {
+            clearTimeout(errorTimeoutRef.current);
+        }
+    }, [step]);
     const [isSaving, setIsSaving] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [entered, setEntered] = useState(false);
@@ -123,7 +137,7 @@ export default function SetupWizard() {
                             const gradosDb = await gradosRes.json();
 
                             if (diasDb.length > 0 && gradosDb.length > 0) {
-                                newWizardData.dias = diasDb.map(d => ({ id: d.orden, nombre: d.nombre_dia }));
+                                // newWizardData.dias = diasDb.map(d => ({ id: d.orden, nombre: d.nombre_dia }));
                                 newWizardData.grados = gradosDb.map(g => g.numero);
                                 newSavedSteps.push(2);
                                 finalStep = 3;
@@ -273,31 +287,60 @@ export default function SetupWizard() {
     const saveStep2Data = async () => {
         setIsSaving(true);
         try {
+            const diasResDb = await fetch('http://127.0.0.1:8000/api/dias');
+            const diasDbList = await diasResDb.json();
+
+            // Eliminar días que fueron deseleccionados
+            for (let dbD of diasDbList) {
+                if (!wizardData.dias.some(d => d.nombre === dbD.nombre_dia)) {
+                    await fetch(`http://127.0.0.1:8000/api/dias/${dbD.id_dia}`, {
+                        method: 'DELETE'
+                    });
+                }
+            }
+
             // Ordenar días por su ID (orden lógico) antes de guardar
             const sortedDias = [...wizardData.dias].sort((a, b) => a.id - b.id);
             for (let d of sortedDias) {
-                await fetch('http://127.0.0.1:8000/api/dias', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre_dia: d.nombre, orden: d.id })
-                });
+                if (!diasDbList.some(dbD => dbD.nombre_dia === d.nombre)) {
+                    await fetch('http://127.0.0.1:8000/api/dias', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre_dia: d.nombre, orden: d.id })
+                    });
+                }
+            }
+
+            const gradosResDb = await fetch('http://127.0.0.1:8000/api/grados');
+            const gradosDbList = await gradosResDb.json();
+
+            // Eliminar grados que fueron deseleccionados
+            for (let dbG of gradosDbList) {
+                if (!wizardData.grados.includes(dbG.numero)) {
+                    await fetch(`http://127.0.0.1:8000/api/grados/${dbG.id_grado}`, {
+                        method: 'DELETE'
+                    });
+                }
             }
 
             // Ordenar grados de menor a mayor antes de guardar
             const sortedGrados = [...wizardData.grados].sort((a, b) => a - b);
             for (let g of sortedGrados) {
-                await fetch('http://127.0.0.1:8000/api/grados', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ numero: g })
-                });
+                if (!gradosDbList.some(dbG => dbG.numero === g)) {
+                    await fetch('http://127.0.0.1:8000/api/grados', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ numero: g })
+                    });
+                }
             }
 
             setSavedSteps(prev => prev.includes(2) ? prev : [...prev, 2]);
+            setEditingSteps(prev => prev.filter(s => s !== 2));
             setStep(prev => prev + 1);
         } catch (error) {
             console.error("Error al guardar días y grados:", error);
-            setErrorMsg("Hubo un error guardando los datos del paso 2.");
+            showError("Hubo un error guardando los datos del paso 2.");
             setStep(prev => prev + 1);
         } finally {
             setIsSaving(false);
@@ -363,7 +406,7 @@ export default function SetupWizard() {
             setStep(prev => prev + 1);
         } catch (error) {
             console.error("Error al guardar configuración de bloques:", error);
-            setErrorMsg("Hubo un error guardando los datos del paso 3. Revisa la consola.");
+            showError("Hubo un error guardando los datos del paso 3. Revisa la consola.");
             setStep(prev => prev + 1);
         } finally {
             setIsSaving(false);
@@ -444,7 +487,7 @@ export default function SetupWizard() {
             }
         } catch (error) {
             console.error("Error al guardar configuración de secciones:", error);
-            setErrorMsg("Hubo un error guardando los datos del paso 4. Revisa la consola.");
+            showError("Hubo un error guardando los datos del paso 4. Revisa la consola.");
         } finally {
             setIsSaving(false);
         }
@@ -559,7 +602,7 @@ export default function SetupWizard() {
             setStep(6);
         } catch (error) {
             console.error("Error al guardar configuración de turnos:", error);
-            setErrorMsg("Hubo un error guardando los datos del paso 5.");
+            showError("Hubo un error guardando los datos del paso 5.");
         } finally {
             setIsSaving(false);
         }
@@ -576,7 +619,7 @@ export default function SetupWizard() {
                 sedes.length === 0 ||
                 sedes.some(s => !s.trim()) ||
                 turnos.length === 0) {
-                setErrorMsg('Por favor, completa todos los campos obligatorios.');
+                showError('Por favor, completa todos los campos obligatorios.');
                 return;
             }
 
@@ -591,12 +634,12 @@ export default function SetupWizard() {
             const { dias, grados } = wizardData;
 
             if (!dias || dias.length === 0 || !grados || grados.length === 0) {
-                setErrorMsg('Por favor, selecciona al menos un día y un grado.');
+                showError('Por favor, selecciona al menos un día y un grado.');
                 return;
             }
 
             // Si el paso 2 ya fue guardado, solo avanzar sin volver a guardar
-            if (savedSteps.includes(2)) {
+            if (savedSteps.includes(2) && !editingSteps.includes(2)) {
                 setStep(prev => prev + 1);
             } else {
                 saveStep2Data();
@@ -607,7 +650,7 @@ export default function SetupWizard() {
             // Validación: Asegurar que todos los grados tengan al menos un bloque asignado
             const { gradoDiaConfig, grados } = wizardData;
             if (!gradoDiaConfig || Object.keys(gradoDiaConfig).length === 0) {
-                setErrorMsg('Configuración inválida. Por favor, asigna los bloques por día.');
+                showError('Configuración inválida. Por favor, asigna los bloques por día.');
                 return;
             }
 
@@ -628,7 +671,7 @@ export default function SetupWizard() {
                 const mensaje = gradosSinBloques.length === 1
                     ? `El grado ${gradosSinBloques[0]}° no tiene ningún bloque asignado.`
                     : `Los grados ${gradosSinBloques.join(', ')}° no tienen bloques asignados.`;
-                setErrorMsg(`${mensaje} Asigna al menos un bloque en algún día de la semana.`);
+                showError(`${mensaje} Asigna al menos un bloque en algún día de la semana.`);
                 return;
             }
 
@@ -643,7 +686,7 @@ export default function SetupWizard() {
             // Validación: Asegurar que todos los grados en todas las sedes tengan al menos 1 sección
             const { secciones, grados, sedes } = wizardData;
             if (!secciones) {
-                setErrorMsg('Configuración inválida. Por favor, añade las secciones.');
+                showError('Configuración inválida. Por favor, añade las secciones.');
                 return;
             }
 
@@ -658,7 +701,7 @@ export default function SetupWizard() {
             }
 
             if (gradosSinSeccion.length > 0) {
-                setErrorMsg(`Faltan secciones en: ${gradosSinSeccion.join(', ')}. Añade al menos una sección.`);
+                showError(`Faltan secciones en: ${gradosSinSeccion.join(', ')}. Añade al menos una sección.`);
                 return;
             }
 
@@ -669,6 +712,7 @@ export default function SetupWizard() {
             }
         } else if (step === 5 && totalSteps === 6) {
             setErrorMsg('');
+
             saveStep5Data();
         } else if (step === totalSteps) {
             if (typeof window !== 'undefined') {
@@ -704,7 +748,7 @@ export default function SetupWizard() {
                 style={{
                     width: '35%',
                     flexShrink: 0,
-                    background: step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
+                    background: 'var(--color-hx-purple)',
                     padding: '48px',
                     transform: entered ? 'translateX(0)' : 'translateX(-110%)',
                     transition: 'transform 0.7s ease-in-out, background 0.5s ease',
@@ -718,15 +762,15 @@ export default function SetupWizard() {
                     <svg viewBox="0 0 100 1000" preserveAspectRatio="none"
                         style={{
                             width: '100%', height: '100%', display: 'block',
-                            fill: step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
+                            fill: 'var(--color-hx-purple)',
                             transition: 'fill 0.5s ease'
                         }}>
                         <path d="M0,0 L0,1000 L20,1000 C150,750 -50,250 20,0 Z"></path>
                     </svg>
                 </div>
 
-                <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: 256, height: 256, background: '#10CFAE', opacity: 0.2, borderRadius: '50%', filter: 'blur(60px)' }}></div>
-                <div style={{ position: 'absolute', top: '40%', left: '-20%', width: 320, height: 320, background: '#F3C252', opacity: 0.2, borderRadius: '50%', filter: 'blur(60px)' }}></div>
+                <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: 256, height: 256, background: '#790EEC', opacity: 0.2, borderRadius: '50%', filter: 'blur(60px)' }}></div>
+                <div style={{ position: 'absolute', top: '40%', left: '-20%', width: 320, height: 320, background: '#790EEC', opacity: 0.2, borderRadius: '50%', filter: 'blur(60px)' }}></div>
 
                 <div className="relative z-10 flex items-center gap-3">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-bold text-[#790EEC] text-xl shadow-lg">Hx</div>
@@ -734,55 +778,33 @@ export default function SetupWizard() {
                 </div>
 
                 <div className="relative z-10 flex flex-col items-center justify-center flex-grow mt-12">
-                    <svg width="240" height="240" viewBox="0 0 240 240" fill="none"
-                        className="mb-10 hover:scale-105 transition-transform duration-700"
-                        style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))' }}>
-                        {step === 1 && (
-                            <>
-                                <circle cx="120" cy="120" r="100" fill="#51B4E8" fillOpacity="0.2" />
-                                <path d="M120 40 L190 160 H50 Z" fill="#10CFAE" fillOpacity="0.9" />
-                                <rect x="90" y="100" width="60" height="60" rx="12" fill="#F3C252" fillOpacity="0.9" />
-                                <circle cx="140" cy="140" r="25" fill="#F1A5B9" />
-                            </>
-                        )}
-                        {step === 2 && (
-                            <>
-                                <circle cx="120" cy="120" r="100" fill="#F1A5B9" fillOpacity="0.2" />
-                                <rect x="80" y="80" width="80" height="80" rx="20" fill="#790EEC" fillOpacity="0.9" />
-                                <circle cx="160" cy="80" r="30" fill="#F3C252" />
-                                <path d="M80 180 Q120 130 160 180 Z" fill="#51B4E8" fillOpacity="0.9" />
-                            </>
-                        )}
-                        {step === 3 && (
-                            <>
-                                <circle cx="120" cy="120" r="100" fill="var(--color-hx-purple)" fillOpacity="0.2" />
-                                <rect x="60" y="90" width="120" height="60" rx="12" fill="var(--color-hx-teal)" fillOpacity="0.9" />
-                                <circle cx="180" cy="150" r="25" fill="var(--color-hx-pink)" />
-                                <path d="M120 40 L160 100 H80 Z" fill="var(--color-hx-blue)" fillOpacity="0.9" />
-                            </>
-                        )}
-                        {step === 4 && (
-                            <>
-                                <circle cx="120" cy="120" r="100" fill="var(--color-hx-pink)" fillOpacity="0.2" />
-                                <rect x="60" y="55" width="50" height="50" rx="10" fill="var(--color-hx-pink)" fillOpacity="0.9" />
-                                <rect x="130" y="55" width="50" height="50" rx="10" fill="var(--color-hx-blue)" fillOpacity="0.9" />
-                                <rect x="60" y="125" width="120" height="50" rx="10" fill="var(--color-hx-teal)" fillOpacity="0.9" />
-                            </>
-                        )}
-                        {step === 5 && (
-                            <>
-                                <circle cx="120" cy="120" r="100" fill="var(--color-hx-teal)" fillOpacity="0.2" />
-                                <rect x="50" y="80" width="140" height="80" rx="15" fill="var(--color-hx-teal)" fillOpacity="0.9" />
-                                <circle cx="120" cy="120" r="20" fill="white" fillOpacity="0.3" />
-                                <path d="M110 120 L118 128 L134 112" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                            </>
-                        )}
-                    </svg>
-                    <h2 style={{ color: 'white', fontSize: 32, fontWeight: 800, textAlign: 'center', marginBottom: 12 }}>
-                        Comienza la Magia
+                    {/* Espacio reservado para la imagen que agregará el usuario */}
+                    <div className="w-full flex justify-center mb-10">
+                        <img
+                            src={`/office.svg`}
+                            alt={`Ilustración del paso ${step}`}
+                            className="w-64 h-64 object-contain hover:scale-105 transition-transform duration-700 drop-shadow-2xl"
+                            onError={(e) => {
+                                // Fallback visual si la imagen aún no existe en la carpeta public/
+                                e.target.onerror = null;
+                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' fill='rgba(255,255,255,0.15)' rx='24'/%3E%3Ctext x='50%25' y='45%25' dominant-baseline='middle' text-anchor='middle' fill='rgba(255,255,255,0.8)' font-family='sans-serif' font-size='16' font-weight='bold'%3EColoca tu imagen en:%3C/text%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='14'%3Epublic/imagen-wizard-paso" + step + ".png%3C/text%3E%3C/svg%3E";
+                            }}
+                        />
+                    </div>
+
+                    <h2 className="text-white text-3xl font-extrabold text-center mb-3">
+                        {step === 1 && "Configuración Inicial"}
+                        {step === 2 && "Días y Grados"}
+                        {step === 3 && "Estructura de Bloques"}
+                        {step === 4 && "Creación de Secciones"}
+                        {step === 5 && "Asignación de Turnos"}
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.85)', textAlign: 'center', fontSize: 16, maxWidth: 260, lineHeight: 1.6 }}>
-                        Moldea la estructura de tu institución de forma rápida y sencilla.
+                    <p className="text-white/85 text-center text-[15px] max-w-xs leading-relaxed">
+                        {step === 1 && "Establece el nombre de tu institución y configura la cantidad de sedes y turnos disponibles."}
+                        {step === 2 && "Selecciona los días de la semana laborables y los grados académicos que impartes."}
+                        {step === 3 && "Define exactamente cuántos bloques de clases se dictarán por cada día y grado."}
+                        {step === 4 && "Crea las secciones o aulas específicas para los grados en cada una de tus sedes."}
+                        {step === 5 && "Asigna un turno de estudio (ej. Mañana o Tarde) a las secciones creadas."}
                     </p>
                 </div>
 
@@ -823,7 +845,7 @@ export default function SetupWizard() {
                         <div style={{
                             textAlign: 'center', fontSize: 11, fontWeight: 700,
                             letterSpacing: '0.15em',
-                            color: step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? '#d49e24' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
+                            color: 'var(--color-hx-purple)',
                             textTransform: 'uppercase', marginBottom: 48, marginTop: 16,
                             transition: 'color 0.5s ease',
                         }}>
@@ -832,9 +854,9 @@ export default function SetupWizard() {
 
                         <div className="flex-grow flex flex-col justify-center w-full">
                             {step === 1 && (
-                                <Paso1Institucion 
-                                    data={wizardData} 
-                                    setData={setWizardData} 
+                                <Paso1Institucion
+                                    data={wizardData}
+                                    setData={setWizardData}
                                     isSaved={savedSteps.includes(1) && !editingSteps.includes(1)}
                                     onEnableEdit={() => {
                                         setWizardDataBackup(JSON.parse(JSON.stringify(wizardData)));
@@ -851,7 +873,22 @@ export default function SetupWizard() {
                             )}
                             {step === 2 && (
                                 <div className="animate-fade-in" style={{ animationDuration: '0.6s' }}>
-                                    <Paso2DiasGrados data={wizardData} setData={setWizardData} />
+                                    <Paso2DiasGrados 
+                                        data={wizardData} 
+                                        setData={setWizardData} 
+                                        isSaved={savedSteps.includes(2) && !editingSteps.includes(2)}
+                                        onEnableEdit={() => {
+                                            setWizardDataBackup(JSON.parse(JSON.stringify(wizardData)));
+                                            setEditingSteps(prev => [...prev, 2]);
+                                        }}
+                                        isEditing={editingSteps.includes(2)}
+                                        onCancelEdit={() => {
+                                            if (wizardDataBackup) {
+                                                setWizardData(wizardDataBackup);
+                                            }
+                                            setEditingSteps(prev => prev.filter(s => s !== 2));
+                                        }}
+                                    />
                                 </div>
                             )}
                             {step === 3 && (
@@ -871,7 +908,7 @@ export default function SetupWizard() {
                             )}
                             {step === totalSteps && (
                                 <div className="flex flex-col items-center justify-center py-12 animate-fade-in" style={{ animationDuration: '0.8s' }}>
-                                    <div className="w-24 h-24 bg-[#10CFAE]/20 text-[#10CFAE] rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(16,207,174,0.4)]">
+                                    <div className="w-24 h-24 bg-[#790EEC]/20 text-[#790EEC] rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(16,207,174,0.4)]">
                                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                                     </div>
                                     <h2 className="text-3xl font-extrabold text-[#111827] tracking-tight mb-4 text-center">¡Estructura Configurada!</h2>
@@ -898,11 +935,7 @@ export default function SetupWizard() {
                                 {step > 1 && (
                                     <button
                                         onClick={handleBack}
-                                        className={`cursor-pointer w-1/2 py-4 rounded-xl font-bold text-sm tracking-widest transition-all border-2 
-                                            ${step === 2 ? 'border-hx-blue text-hx-blue hover:bg-hx-blue/5'
-                                                : step === 3 ? 'border-hx-yellow text-[#d49e24] hover:bg-hx-yellow/10'
-                                                    : step === 4 ? 'border-hx-pink text-[#c25071] hover:bg-hx-pink/10'
-                                                        : 'border-hx-teal text-hx-teal hover:bg-hx-teal/10'}`}
+                                        className="cursor-pointer w-1/2 py-4 rounded-xl font-bold text-sm tracking-widest transition-all border-2 border-hx-purple text-hx-purple hover:bg-hx-purple/10"
                                     >
                                         VOLVER
                                     </button>
@@ -912,15 +945,13 @@ export default function SetupWizard() {
                                     disabled={isSaving}
                                     style={{
                                         width: step === 1 ? '100%' : '50%',
-                                        background: isSaving
-                                            ? (step === 1 ? 'rgba(121,14,236,0.5)' : step === 2 ? 'rgba(81,180,232,0.5)' : step === 3 ? 'rgba(243,194,82,0.5)' : step === 4 ? 'rgba(241,165,185,0.5)' : 'rgba(16,207,174,0.5)')
-                                            : (step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)'),
+                                        background: isSaving ? 'rgba(121,14,236,0.5)' : 'var(--color-hx-purple)',
                                         color: 'white', fontWeight: 700,
                                         padding: '16px 0', borderRadius: 12,
                                         fontSize: 13, letterSpacing: '0.1em',
                                         border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s ease',
-                                        boxShadow: isSaving ? 'none' : (step === 1 ? '0 8px 20px -6px rgba(121,14,236,0.5)' : step === 2 ? '0 8px 20px -6px rgba(81,180,232,0.5)' : step === 3 ? '0 8px 20px -6px rgba(243,194,82,0.5)' : step === 4 ? '0 8px 20px -6px rgba(241,165,185,0.5)' : '0 8px 20px -6px rgba(16,207,174,0.5)'),
+                                        boxShadow: isSaving ? 'none' : '0 8px 20px -6px rgba(121,14,236,0.5)',
                                     }}
                                 >
                                     {isSaving ? 'GUARDANDO...' : (step === totalSteps ? 'IR AL DASHBOARD' : 'CONTINUAR Y GUARDAR')}
@@ -935,7 +966,7 @@ export default function SetupWizard() {
                                 <div style={{
                                     height: '100%',
                                     width: `${(step / totalSteps) * 100}%`,
-                                    background: step === 1 ? 'var(--color-hx-purple)' : step === 2 ? 'var(--color-hx-blue)' : step === 3 ? 'var(--color-hx-yellow)' : step === 4 ? 'var(--color-hx-pink)' : 'var(--color-hx-teal)',
+                                    background: 'var(--color-hx-purple)',
                                     borderRadius: 999, transition: 'all 0.5s ease'
                                 }}></div>
                             </div>

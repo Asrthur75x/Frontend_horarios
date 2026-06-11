@@ -26,11 +26,7 @@ const isDashboard =
     (pathname === "/" || pathname === "" || pathname.includes("/dashboard"));
 const isAjustes = pathname.startsWith("/ajustes");
 
-const sidebarColor = pathname.startsWith("/ajustes")
-    ? "var(--color-hx-yellow)"
-    : pathname.startsWith("/horarios")
-      ? "var(--color-hx-red)"
-      : "rgba(121, 14, 236, 0.95)";
+const sidebarColor = "rgba(121, 14, 236, 0.95)";
 ---
 
 <header
@@ -81,9 +77,14 @@ const sidebarColor = pathname.startsWith("/ajustes")
                 href="/dashboard"
                 class={isDashboard
                     ? "bg-white text-[#111827] px-5 py-2.5 rounded-2xl text-sm font-extrabold shadow-sm transition-all border border-slate-200 hover:shadow-md"
-                    : "relative px-4 py-2 text-sm font-bold text-slate-500 hover:text-[#111827] transition-colors rounded-xl"}
+                    : "relative inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-slate-500 hover:text-[#111827] transition-colors rounded-xl overflow-hidden group"}
             >
-                Dashboard
+                <span class="relative z-10">Dashboard</span>
+                {
+                    !isDashboard && (
+                        <span class="absolute bottom-0 left-1/2 w-0 h-[3px] bg-hx-purple transition-all duration-300 ease-out group-hover:w-full group-hover:left-0 rounded-full" />
+                    )
+                }
             </a>
             <!-- Horarios -->
             <a
@@ -130,7 +131,7 @@ const sidebarColor = pathname.startsWith("/ajustes")
                 href="/ajustes"
                 class={`relative w-11 h-11 bg-white rounded-full border flex items-center justify-center transition-all cursor-pointer hover:rotate-90 duration-300 ${
                     isAjustes
-                        ? "border-hx-yellow text-hx-yellow shadow-md shadow-hx-yellow/20"
+                        ? "border-hx-purple text-hx-purple shadow-md shadow-hx-purple/20"
                         : "shadow-sm border-slate-100 text-slate-600 hover:text-[#111827] hover:shadow-md"
                 }`}
             >
@@ -197,7 +198,7 @@ const sidebarColor = pathname.startsWith("/ajustes")
                     if (underline) underline.classList.add("hidden");
 
                     nav.classList.add(
-                        "text-[#1A5AD7]",
+                        "text-[#790EEC]",
                         "shadow-sm",
                         "border",
                         "border-transparent",
@@ -213,7 +214,7 @@ const sidebarColor = pathname.startsWith("/ajustes")
                     if (underline) underline.classList.remove("hidden");
 
                     nav.classList.remove(
-                        "text-[#1A5AD7]",
+                        "text-[#790EEC]",
                         "shadow-sm",
                         "border",
                         "border-transparent",
@@ -241,7 +242,7 @@ const sidebarColor = pathname.startsWith("/ajustes")
         background: conic-gradient(
             from 0deg,
             transparent 0 300deg,
-            #1a5ad7 360deg
+            #790EEC 360deg
         );
         animation: customSpin 2s linear infinite;
     }

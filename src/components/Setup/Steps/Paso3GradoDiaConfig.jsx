@@ -44,14 +44,14 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
     };
 
     const toggleGradeToCopy = (g) => {
-        setSelectedGradesToCopy(prev => 
+        setSelectedGradesToCopy(prev =>
             prev.includes(g) ? prev.filter(id => id !== g) : [...prev, g]
         );
     };
 
     const confirmCopy = () => {
         if (selectedGradesToCopy.length === 0) return;
-        
+
         setData(prev => {
             const newConfig = { ...prev.gradoDiaConfig };
             selectedGradesToCopy.forEach(targetGrado => {
@@ -61,10 +61,10 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
             });
             return { ...prev, gradoDiaConfig: newConfig };
         });
-        
+
         setIsCopying(false);
         setSelectedGradesToCopy([]);
-        
+
         // Mostrar mensaje de éxito temporal en vez de un alert
         setSuccessMessage(true);
         setTimeout(() => {
@@ -82,7 +82,7 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
             </p>
 
             <div className="w-full max-w-[800px] flex flex-col items-center">
-                
+
                 {/* PESTAÑAS (TABS) */}
                 <div className="flex flex-wrap justify-center gap-2 mb-6 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                     {data.grados.sort((a, b) => a - b).map(grado => {
@@ -95,11 +95,10 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
                                     setIsCopying(false);
                                     setSuccessMessage(false);
                                 }}
-                                className={`cursor-pointer px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                    isActive 
-                                    ? 'bg-[#F3C252] text-[#111827] shadow-lg shadow-[#F3C252]/20 scale-105' 
+                                className={`cursor-pointer px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${isActive
+                                    ? 'bg-[#790EEC] text-white shadow-lg shadow-[#790EEC]/20 scale-105'
                                     : 'bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-700'
-                                }`}
+                                    }`}
                             >
                                 {grado}° Grado
                             </button>
@@ -110,12 +109,12 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
                 {/* PANEL PRINCIPAL */}
                 <div className="w-full bg-white border-2 border-slate-100 rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden transition-all duration-300">
                     {/* Adorno visual del panel */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#F3C252]/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
-                    
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#790EEC]/10 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
+
                     {/* Cabecera del Panel */}
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 relative z-10 border-b border-slate-100 pb-5 gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-[#F3C252]/10 border border-[#F3C252]/30 flex items-center justify-center font-black text-2xl text-[#d49e24]">
+                            <div className="w-14 h-14 rounded-2xl bg-[#790EEC]/10 border border-[#790EEC]/30 flex items-center justify-center font-black text-2xl text-[#790EEC]">
                                 {activeTab}°
                             </div>
                             <div>
@@ -130,19 +129,19 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
                         {data.dias.map(dia => {
                             const val = data.gradoDiaConfig[`${activeTab}-${dia.id}`] !== undefined ? data.gradoDiaConfig[`${activeTab}-${dia.id}`] : 0;
                             return (
-                                <div key={dia.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-3 sm:p-4 flex flex-col items-center hover:border-[#F3C252] hover:bg-white hover:shadow-lg hover:shadow-[#F3C252]/5 transition-all duration-300 group">
-                                    <span className="text-[10px] sm:text-xs font-black text-slate-400 group-hover:text-[#d49e24] uppercase tracking-widest mb-3 sm:mb-4 transition-colors">
-                                        {dia.nombre.substring(0,3)}
+                                <div key={dia.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-3 sm:p-4 flex flex-col items-center hover:border-[#790EEC] hover:bg-white hover:shadow-lg hover:shadow-[#790EEC]/5 transition-all duration-300 group">
+                                    <span className="text-[10px] sm:text-xs font-black text-slate-400 group-hover:text-[#790EEC] uppercase tracking-widest mb-3 sm:mb-4 transition-colors">
+                                        {dia.nombre.substring(0, 3)}
                                     </span>
                                     <div className="flex items-center gap-1.5 sm:gap-3 w-full justify-center">
-                                        <button 
-                                            onClick={() => handleDayChange(activeTab, dia.id, -1)} 
-                                            className="cursor-pointer w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-400 hover:bg-[#F3C252] hover:text-[#111827] font-black shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all text-lg flex items-center justify-center shrink-0"
+                                        <button
+                                            onClick={() => handleDayChange(activeTab, dia.id, -1)}
+                                            className="cursor-pointer w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-400 hover:bg-[#790EEC] hover:text-white font-black shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all text-lg flex items-center justify-center shrink-0"
                                         >-</button>
                                         <span className="text-xl sm:text-2xl font-black text-slate-800 w-5 sm:w-6 text-center">{val}</span>
-                                        <button 
-                                            onClick={() => handleDayChange(activeTab, dia.id, 1)} 
-                                            className="cursor-pointer w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-400 hover:bg-[#F3C252] hover:text-[#111827] font-black shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all text-lg flex items-center justify-center shrink-0"
+                                        <button
+                                            onClick={() => handleDayChange(activeTab, dia.id, 1)}
+                                            className="cursor-pointer w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-400 hover:bg-[#790EEC] hover:text-white font-black shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all text-lg flex items-center justify-center shrink-0"
                                         >+</button>
                                     </div>
                                 </div>
@@ -164,35 +163,35 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
 
                             {!isCopying && !successMessage && (
                                 <div className="flex justify-center animate-fade-in">
-                                    <button 
+                                    <button
                                         onClick={() => setIsCopying(true)}
-                                        className="cursor-pointer flex items-center gap-2 px-6 py-4 bg-[#111827] text-white hover:bg-[#F3C252] hover:text-[#111827] rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:shadow-[#F3C252]/20 group w-full sm:w-auto justify-center"
+                                        className="cursor-pointer flex items-center gap-2 px-6 py-4 bg-[#790EEC]  text-white hover:bg-[#790EEC]/90 hover:text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:shadow-[#790EEC]/20 group w-full sm:w-auto justify-center"
                                     >
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                         Copiar este horario a otros grados
                                     </button>
                                 </div>
                             )}
-                            
+
                             {isCopying && !successMessage && (
-                                <div className="bg-[#F3C252]/5 border border-[#F3C252]/30 rounded-2xl p-5 sm:p-6 animate-fade-in shadow-inner">
+                                <div className="bg-[#790EEC]/5 border border-[#790EEC]/30 rounded-2xl p-5 sm:p-6 animate-fade-in shadow-inner">
                                     <h4 className="font-bold text-slate-800 mb-4 text-center sm:text-left flex items-center gap-2 justify-center sm:justify-start">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d49e24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#790EEC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                                         Selecciona los grados destino:
                                     </h4>
-                                    
+
                                     <div className="flex flex-wrap justify-center sm:justify-start gap-3 mb-6">
-                                        {data.grados.filter(g => g !== activeTab).sort((a,b) => a-b).map(g => {
+                                        {data.grados.filter(g => g !== activeTab).sort((a, b) => a - b).map(g => {
                                             const isSelected = selectedGradesToCopy.includes(g);
                                             return (
-                                                <label key={g} className={`cursor-pointer px-4 py-2.5 rounded-xl border-2 transition-all font-bold text-sm flex items-center gap-2.5 select-none ${isSelected ? 'border-[#F3C252] bg-white shadow-md text-[#d49e24]' : 'border-slate-200 bg-white/50 text-slate-500 hover:border-[#F3C252]/50 hover:bg-white'}`}>
-                                                    <input 
-                                                        type="checkbox" 
-                                                        className="hidden" 
-                                                        checked={isSelected} 
-                                                        onChange={() => toggleGradeToCopy(g)} 
+                                                <label key={g} className={`cursor-pointer px-4 py-2.5 rounded-xl border-2 transition-all font-bold text-sm flex items-center gap-2.5 select-none ${isSelected ? 'border-[#790EEC] bg-white shadow-md text-[#790EEC]' : 'border-slate-200 bg-white/50 text-slate-500 hover:border-[#790EEC]/50 hover:bg-white'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="hidden"
+                                                        checked={isSelected}
+                                                        onChange={() => toggleGradeToCopy(g)}
                                                     />
-                                                    <div className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-colors border ${isSelected ? 'border-[#F3C252] bg-[#F3C252] text-white' : 'border-slate-300 bg-white'}`}>
+                                                    <div className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-colors border ${isSelected ? 'border-[#790EEC] bg-[#790EEC] text-white' : 'border-slate-300 bg-white'}`}>
                                                         {isSelected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
                                                     </div>
                                                     {g}° Grado
@@ -200,21 +199,21 @@ export default function Paso3GradoDiaConfig({ data, setData }) {
                                             );
                                         })}
                                     </div>
-                                    
-                                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-[#F3C252]/20">
-                                        <button 
+
+                                    <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-[#790EEC]/20">
+                                        <button
                                             onClick={() => {
                                                 setIsCopying(false);
                                                 setSelectedGradesToCopy([]);
-                                            }} 
+                                            }}
                                             className="cursor-pointer px-6 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-white hover:text-slate-800 transition-colors w-full sm:w-auto"
                                         >
                                             Cancelar
                                         </button>
-                                        <button 
-                                            onClick={confirmCopy} 
-                                            disabled={selectedGradesToCopy.length === 0} 
-                                            className={`px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm w-full sm:w-auto ${selectedGradesToCopy.length > 0 ? 'cursor-pointer bg-[#111827] text-white hover:bg-black hover:shadow-md' : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70'}`}
+                                        <button
+                                            onClick={confirmCopy}
+                                            disabled={selectedGradesToCopy.length === 0}
+                                            className={`px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm w-full sm:w-auto ${selectedGradesToCopy.length > 0 ? 'cursor-pointer bg-[#790EEC] text-white hover:bg-[#790EEC]/90 hover:shadow-md' : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70'}`}
                                         >
                                             Aplicar Copiado
                                         </button>

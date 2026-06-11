@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Paso2DiasGrados({ data, setData }) {
+export default function Paso2DiasGrados({ data, setData, isSaved, onEnableEdit, isEditing, onCancelEdit }) {
     const diasSemana = [
         { id: 1, nombre: 'Lunes' },
         { id: 2, nombre: 'Martes' },
@@ -41,15 +41,35 @@ export default function Paso2DiasGrados({ data, setData }) {
     };
 
     return (
-        <div className="w-full flex flex-col items-center animate-fade-in">
+        <div className="w-full flex flex-col items-center animate-fade-in pb-8">
             <h2 className="text-3xl lg:text-4xl font-extrabold text-[#111827] text-center mb-4 leading-tight">
                 Días y Grados
             </h2>
-            <p className="text-slate-500 text-center mb-12 text-lg">
-                Configura los días lectivos y los grados de tu institución.
-            </p>
+            <div className="w-full max-w-[480px] flex flex-col items-end gap-5 mb-5">
+                <p className="text-slate-500 text-center text-lg m-0 w-full">
+                    Configura los días lectivos y los grados de tu institución.
+                </p>
+                {isSaved && (
+                    <button
+                        onClick={onEnableEdit}
+                        className="px-4 py-1.5 rounded-full border-2 border-[var(--color-hx-purple)] text-[#ffffff] text-sm font-bold bg-[var(--color-hx-purple)] hover:opacity-90 transition-opacity shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        Activar Edición
+                    </button>
+                )}
+                {isEditing && (
+                    <button
+                        onClick={onCancelEdit}
+                        className="px-4 py-1.5 rounded-full border-2 border-[var(--color-hx-purple)] text-slate-500 text-sm font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                    >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        Cancelar Edición
+                    </button>
+                )}
+            </div>
 
-            <div className="w-full max-w-[480px] space-y-8">
+            <div className={`w-full max-w-[480px] space-y-8 ${isSaved ? 'opacity-60 pointer-events-none select-none grayscale-[20%]' : ''}`}>
 
                 {/* DÍAS */}
                 <div className="w-full">
@@ -65,7 +85,7 @@ export default function Paso2DiasGrados({ data, setData }) {
                                     onClick={() => handleDiaToggle(dia)}
                                     className={`p-3 rounded-xl border-2 font-bold transition-all text-sm flex items-center justify-center gap-2 cursor-pointer
                                         ${isSelected
-                                            ? 'border-hx-blue text-hx-blue bg-hx-blue/10'
+                                            ? 'border-hx-purple text-hx-purple bg-hx-purple/10'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                                 >
                                     {isSelected && (
@@ -92,7 +112,7 @@ export default function Paso2DiasGrados({ data, setData }) {
                                     onClick={() => handleGradoToggle(grado)}
                                     className={`p-4 rounded-xl border-2 font-bold transition-all text-lg flex items-center justify-center cursor-pointer
                                         ${isSelected
-                                            ? 'border-hx-blue text-hx-blue bg-hx-blue/10'
+                                            ? 'border-hx-purple text-hx-purple bg-hx-purple/10'
                                             : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
                                 >
                                     {grado}°
