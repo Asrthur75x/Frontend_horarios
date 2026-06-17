@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:8000/api';
 
-const ProfesorCard = ({ prof, sedesStr, cantDispo, onEdit, onDelete, isSelected, onToggleSelect, isSelectionMode }) => {
+const ProfesorCard = ({ prof, sedesStr, cantGrados, cantDispo, onEdit, onDelete, isSelected, onToggleSelect, isSelectionMode }) => {
     return (
         <div
             className={`relative bg-white rounded-[20px] border p-6 flex flex-col gap-5 hover:shadow-md transition-all group cursor-pointer
@@ -41,9 +41,9 @@ const ProfesorCard = ({ prof, sedesStr, cantDispo, onEdit, onDelete, isSelected,
                                 {cantDispo === 'Total' ? 'Dispo. Total' : `${cantDispo} Blq.`}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1 text-slate-400" title="ID Profesor">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                            <span className="text-[10px] font-bold">#{prof.id_profesor}</span>
+                        <div className="flex items-center gap-1 text-slate-400" title="Grados Permitidos">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                            <span className="text-[10px] font-bold">{cantGrados} Grados</span>
                         </div>
                     </div>
                 </div>
@@ -85,6 +85,8 @@ export default function ProfesoresManager() {
     const [profesores, setProfesores] = useState([]);
     const [sedes, setSedes] = useState([]);
     const [profesorSedes, setProfesorSedes] = useState([]);
+    const [grados, setGrados] = useState([]);
+    const [gradoProfesores, setGradoProfesores] = useState([]);
     const [disponibilidades, setDisponibilidades] = useState([]);
     const [preferencias, setPreferencias] = useState([]);
     const [dias, setDias] = useState([]);
@@ -106,11 +108,13 @@ export default function ProfesoresManager() {
     const [formNombre, setFormNombre] = useState('');
     const [nombreError, setNombreError] = useState('');
     const [formSedes, setFormSedes] = useState([]); // array of id_sede
+    const [formGrados, setFormGrados] = useState([]); // array of id_grado
     const [formDispo, setFormDispo] = useState([]); // array of { id_dia, id_turno, nro_bloque }
     const [formPreferencia, setFormPreferencia] = useState([]); // array of { id_dia, id_turno, nro_bloque }
     const [esDisponibilidadTotal, setEsDisponibilidadTotal] = useState(false);
     const [modoPincel, setModoPincel] = useState('disponible'); // 'disponible' | 'preferido'
     const [activeSede, setActiveSede] = useState(null); // Sede seleccionada en el Tab 3
+    const [activeTurnoTab, setActiveTurnoTab] = useState(null); // Turno seleccionado en Disponibilidad
 
     // List Management State
     const [searchTerm, setSearchTerm] = useState('');
@@ -189,7 +193,8 @@ export default function ProfesoresManager() {
             setLoading(true);
             const endpoints = [
                 'profesores', 'sedes', 'profesor-sedes',
-                'profesor-disponibilidad', 'profesor-preferencia', 'dias', 'turnos', 'bloques', 'grado-dia-config'
+                'profesor-disponibilidad', 'profesor-preferencia', 'dias', 'turnos', 'bloques', 'grado-dia-config',
+                'grados', 'grado-profesor'
             ];
 
             const responses = await Promise.all(
@@ -212,6 +217,8 @@ export default function ProfesoresManager() {
             setDias(data[5] || []);
             setTurnos(data[6] || []);
             setBloques(data[7] || []);
+            setGrados(data[9] || []);
+            setGradoProfesores(data[10] || []);
 
             // Calcular el máximo de bloques por día desde grado-dia-config
             const gradoDiaConfigs = data[8] || [];
@@ -270,6 +277,10 @@ export default function ProfesoresManager() {
         return cant;
     };
 
+    const getCantGrados = (id_prof) => {
+        return gradoProfesores.filter(x => x.id_profesor === id_prof).length;
+    };
+
     // ── Abrir Modal ──
     const abrirModalNueva = () => {
         setIsEditing(false);
@@ -277,10 +288,13 @@ export default function ProfesoresManager() {
         setFormNombre('');
         setNombreError('');
         setFormSedes([]);
+        setFormGrados([]);
         setFormDispo([]);
         setFormPreferencia([]);
-        setActiveSede(null);
         setEsDisponibilidadTotal(false);
+        setModoPincel('disponible');
+        setActiveSede(null);
+        setActiveTurnoTab(null);
         setActiveTab('perfil');
         setIsModalOpen(true);
     };
@@ -308,7 +322,12 @@ export default function ProfesoresManager() {
         }
 
         setFormSedes(sedesActuales);
-        if (sedesActuales.length > 0) setActiveSede(sedesActuales[0]);
+
+        // Cargar grados actuales
+        const gradosActuales = gradoProfesores
+            .filter(x => x.id_profesor === prof.id_profesor)
+            .map(x => x.id_grado);
+        setFormGrados(gradosActuales);
 
         // Cargar dispo actual
         const dispoActual = disponibilidades
@@ -333,8 +352,10 @@ export default function ProfesoresManager() {
         setFormPreferencia(prefActual);
 
         // Si no tiene disponibilidades ni preferencias, está libre todos los días
-        setEsDisponibilidadTotal(dispoActual.length === 0 && prefActual.length === 0);
-
+        setEsDisponibilidadTotal(prof.es_disponibilidad_total || (dispoActual.length === 0 && prefActual.length === 0));
+        setModoPincel('disponible');
+        setActiveSede(sedesActuales.length > 0 ? sedesActuales[0] : null);
+        setActiveTurnoTab(null);
         setActiveTab('perfil');
         setIsModalOpen(true);
     };
@@ -438,6 +459,41 @@ export default function ProfesoresManager() {
             if (formSedes.length > 0 && (!activeSede || !formSedes.includes(activeSede))) {
                 setActiveSede(formSedes[0]);
             }
+            setActiveTab('grados');
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        } finally {
+            setGuardando(false);
+        }
+    };
+
+    // ── Guardar Grados ──
+    const toggleGrado = (id_grado) => {
+        setFormGrados(prev =>
+            prev.includes(id_grado)
+                ? prev.filter(x => x !== id_grado)
+                : [...prev, id_grado]
+        );
+    };
+
+    const handleGuardarGrados = async () => {
+        if (!editId) return;
+        setGuardando(true);
+        try {
+            // Eliminar actuales
+            const actuales = gradoProfesores.filter(x => x.id_profesor === editId);
+            for (let a of actuales) {
+                await fetch(`${API_BASE}/grado-profesor/${a.id_grado_profesor}`, { method: 'DELETE' });
+            }
+            // Insertar nuevas
+            for (let gid of formGrados) {
+                await fetch(`${API_BASE}/grado-profesor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_profesor: editId, id_grado: gid })
+                });
+            }
+            await fetchDatos();
             setActiveTab('disponibilidad');
         } catch (err) {
             alert(`Error: ${err.message}`);
@@ -705,6 +761,7 @@ export default function ProfesoresManager() {
                                         prof={prof}
                                         index={index}
                                         sedesStr={getSedesProfesor(prof.id_profesor)}
+                                        cantGrados={getCantGrados(prof.id_profesor)}
                                         cantDispo={getCantDispo(prof.id_profesor)}
                                         onEdit={abrirModalEdicion}
                                         onDelete={() => openDeleteModal(prof.id_profesor)}
@@ -763,7 +820,7 @@ export default function ProfesoresManager() {
             {/* Modal Principal con TABS */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in p-4 sm:p-6">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-full sm:max-h-[90vh] border border-slate-100 flex flex-col overflow-hidden transform animate-slide-up">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-full sm:max-h-[90vh] border border-slate-100 flex flex-col overflow-hidden transform animate-slide-up">
 
                         {/* Header Limpio */}
                         <div className="bg-white px-8 py-6 flex justify-between items-start border-b border-slate-100 shrink-0">
@@ -776,131 +833,161 @@ export default function ProfesoresManager() {
                             </button>
                         </div>
 
-                        {/* Tabs Limpios */}
-                        <div className="flex border-b border-slate-100 px-8 shrink-0 bg-white">
-                            <button onClick={() => setActiveTab('perfil')} className={`py-4 px-2 mr-6 font-bold text-sm border-b-2 transition-colors whitespace-nowrap cursor-pointer ${activeTab === 'perfil' ? 'border-hx-purple text-hx-purple' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>1. Perfil Personal</button>
-                            <button onClick={() => editId && setActiveTab('sedes')} disabled={!editId} className={`py-4 px-2 mr-6 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${!editId ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer ' + (activeTab === 'sedes' ? 'border-hx-purple text-hx-purple' : 'border-transparent text-slate-400 hover:text-slate-600')}`}>2. Asignar Sedes</button>
-                            <button onClick={() => editId && setActiveTab('disponibilidad')} disabled={!editId} className={`py-4 px-2 font-bold text-sm border-b-2 transition-colors whitespace-nowrap ${!editId ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer ' + (activeTab === 'disponibilidad' ? 'border-hx-purple text-hx-purple' : 'border-transparent text-slate-400 hover:text-slate-600')}`}>3. Disponibilidad</button>
-                        </div>
+                        {/* Body (Sidebar + Content) */}
+                        <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
-                        {/* Tab Content */}
-                        <div className="p-8 overflow-y-auto flex-1 min-h-0">
-                            {/* TAB 1: PERFIL */}
-                            {activeTab === 'perfil' && (
-                                <form onSubmit={handleGuardarPerfil} className="max-w-md mx-auto space-y-5">
-                                    <div>
-                                        <label className="text-sm font-bold text-slate-700 block mb-2">Nombre Completo del Docente</label>
-                                        <input
-                                            type="text" value={formNombre}
-                                            onChange={(e) => {
-                                                setFormNombre(e.target.value);
-                                                if (e.target.value.trim()) setNombreError('');
-                                            }}
-                                            placeholder="Ej. Juan Carlos Pérez"
-                                            className={`w-full px-4 py-3 rounded-xl border ${nombreError ? 'border-red-400 bg-red-50 focus:ring-red-400/20 text-red-900 placeholder-red-300' : 'border-slate-200 bg-slate-50 focus:border-hx-purple focus:ring-hx-purple/10 text-slate-800'} focus:bg-white focus:ring-4 outline-none transition-all text-sm font-medium`}
-                                        />
-                                        {nombreError && (
-                                            <p className="text-red-500 text-xs font-bold mt-2 flex items-center gap-1.5 animate-fade-in">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                                                {nombreError}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-4 pt-2">
-                                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
-                                        <button disabled={guardando} type="submit" className={`flex-1 py-3.5 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
-                                            {guardando ? 'Guardando...' : 'Continuar'}
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
+                            {/* Sidebar Nav */}
+                            <div className="w-full md:w-64 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-100 flex md:flex-col shrink-0 p-4 gap-2 overflow-x-auto md:overflow-x-visible">
+                                <button onClick={() => setActiveTab('perfil')} className={`text-left px-4 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'perfil' ? 'bg-white shadow-sm border border-slate-200 text-hx-purple' : 'border border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 cursor-pointer'}`}>1. Perfil Personal</button>
+                                <button onClick={() => editId && setActiveTab('sedes')} disabled={!editId} className={`text-left px-4 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${!editId ? 'opacity-40 cursor-not-allowed border border-transparent' : activeTab === 'sedes' ? 'bg-white shadow-sm border border-slate-200 text-hx-purple' : 'border border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 cursor-pointer'}`}>2. Asignar Sedes</button>
+                                <button onClick={() => editId && setActiveTab('grados')} disabled={!editId} className={`text-left px-4 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${!editId ? 'opacity-40 cursor-not-allowed border border-transparent' : activeTab === 'grados' ? 'bg-white shadow-sm border border-slate-200 text-hx-purple' : 'border border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 cursor-pointer'}`}>3. Grados Permitidos</button>
+                                <button onClick={() => editId && setActiveTab('disponibilidad')} disabled={!editId} className={`text-left px-4 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${!editId ? 'opacity-40 cursor-not-allowed border border-transparent' : activeTab === 'disponibilidad' ? 'bg-white shadow-sm border border-slate-200 text-hx-purple' : 'border border-transparent text-slate-500 hover:bg-slate-100/50 hover:text-slate-700 cursor-pointer'}`}>4. Disponibilidad</button>
+                            </div>
 
-                            {/* TAB 2: SEDES */}
-                            {activeTab === 'sedes' && (
-                                <div className="max-w-2xl mx-auto">
-                                    <div className="flex items-center gap-3 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <div className="w-9 h-9 bg-hx-purple/10 rounded-xl flex items-center justify-center text-hx-purple shrink-0">
-                                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-                                        </div>
+                            {/* Tab Content */}
+                            <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+                                {/* TAB 1: PERFIL */}
+                                {activeTab === 'perfil' && (
+                                    <form onSubmit={handleGuardarPerfil} className="max-w-md mx-auto space-y-5">
                                         <div>
-                                            <p className="font-bold text-slate-700 text-sm">Sedes del Docente</p>
-                                            <p className="text-[11px] text-slate-400">Selecciona una o más sedes donde imparte clases</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                                        {sedes.map(s => {
-                                            const activo = formSedes.includes(s.id_sede);
-                                            return (
-                                                <div
-                                                    key={s.id_sede}
-                                                    onClick={() => toggleSede(s.id_sede)}
-                                                    className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${activo ? 'border-hx-purple bg-hx-purple/5 shadow-sm shadow-hx-purple/10' : 'border-slate-100 hover:border-slate-200 bg-white hover:shadow-sm'
-                                                        }`}
-                                                >
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${activo ? 'bg-hx-purple text-white' : 'bg-slate-100 text-slate-400'
-                                                        }`}>
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className={`font-bold text-sm truncate ${activo ? 'text-hx-purple' : 'text-slate-700'}`}>{s.nombre_sede}</p>
-                                                        <p className="text-[11px] text-slate-400 mt-0.5 truncate">{s.direccion || 'Sin dirección'}</p>
-                                                    </div>
-                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activo ? 'border-hx-purple bg-hx-purple' : 'border-slate-200'
-                                                        }`}>
-                                                        {activo && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12" /></svg>}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {sedes.length === 0 && (
-                                            <div className="col-span-2 text-center py-8 text-slate-400">
-                                                <svg className="mx-auto mb-2" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
-                                                <p className="text-sm font-medium">No hay sedes registradas</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-4 mt-6">
-                                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
-                                        <button disabled={guardando} onClick={handleGuardarSedes} className={`flex-1 py-3.5 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md shadow-hx-purple/20 transition-all flex items-center justify-center gap-2 text-sm ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
-                                            {guardando ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Guardando...</>) : (<>Continuar <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg></>)}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB 3: DISPONIBILIDAD */}
-                            {activeTab === 'disponibilidad' && (
-                                <div className="space-y-5">
-                                    {/* Info banner y Toggle Total */}
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex items-center justify-between p-4 bg-hx-purple/5 rounded-2xl border border-hx-purple/20">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-hx-purple shrink-0">
-                                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><polyline points="9 12 11 14 15 10" /></svg>
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-hx-purple text-sm">Disponibilidad Total (Libre)</p>
-                                                    <p className="text-[11px] text-slate-500 font-medium">El docente puede trabajar cualquier día y en cualquier bloque.</p>
-                                                </div>
-                                            </div>
-                                            <div
-                                                onClick={() => {
-                                                    setEsDisponibilidadTotal(!esDisponibilidadTotal);
-                                                    if (!esDisponibilidadTotal) {
-                                                        setFormDispo([]);
-                                                        setFormPreferencia([]);
-                                                    }
+                                            <label className="text-sm font-bold text-slate-700 block mb-2">Nombre Completo del Docente</label>
+                                            <input
+                                                type="text" value={formNombre}
+                                                onChange={(e) => {
+                                                    setFormNombre(e.target.value);
+                                                    if (e.target.value.trim()) setNombreError('');
                                                 }}
-                                                className={`w-12 h-6 rounded-full transition-colors cursor-pointer relative shrink-0 ${esDisponibilidadTotal ? 'bg-hx-purple' : 'bg-slate-300'}`}
-                                            >
-                                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${esDisponibilidadTotal ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                                                placeholder="Ej. Juan Carlos Pérez"
+                                                className={`w-full px-4 py-3 rounded-xl border ${nombreError ? 'border-red-400 bg-red-50 focus:ring-red-400/20 text-red-900 placeholder-red-300' : 'border-slate-200 bg-slate-50 focus:border-hx-purple focus:ring-hx-purple/10 text-slate-800'} focus:bg-white focus:ring-4 outline-none transition-all text-sm font-medium`}
+                                            />
+                                            {nombreError && (
+                                                <p className="text-red-500 text-xs font-bold mt-2 flex items-center gap-1.5 animate-fade-in">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                                    {nombreError}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-4 pt-2">
+                                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
+                                            <button disabled={guardando} type="submit" className={`flex-1 py-3.5 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
+                                                {guardando ? 'Guardando...' : 'Continuar'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {/* TAB 2: SEDES */}
+                                {activeTab === 'sedes' && (
+                                    <div className="max-w-2xl mx-auto">
+                                        <div className="flex items-center gap-3 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <div className="w-9 h-9 bg-hx-purple/10 rounded-xl flex items-center justify-center text-hx-purple shrink-0">
+                                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-700 text-sm">Sedes del Docente</p>
+                                                <p className="text-[11px] text-slate-400">Selecciona una o más sedes donde imparte clases</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                                            {sedes.map(s => {
+                                                const activo = formSedes.includes(s.id_sede);
+                                                return (
+                                                    <div
+                                                        key={s.id_sede}
+                                                        onClick={() => toggleSede(s.id_sede)}
+                                                        className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${activo ? 'border-hx-purple bg-hx-purple/5 shadow-sm shadow-hx-purple/10' : 'border-slate-100 hover:border-slate-200 bg-white hover:shadow-sm'
+                                                            }`}
+                                                    >
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${activo ? 'bg-hx-purple text-white' : 'bg-slate-100 text-slate-400'
+                                                            }`}>
+                                                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`font-bold text-sm truncate ${activo ? 'text-hx-purple' : 'text-slate-700'}`}>{s.nombre_sede}</p>
+                                                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">{s.direccion || 'Sin dirección'}</p>
+                                                        </div>
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activo ? 'border-hx-purple bg-hx-purple' : 'border-slate-200'
+                                                            }`}>
+                                                            {activo && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12" /></svg>}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {sedes.length === 0 && (
+                                                <div className="col-span-2 text-center py-8 text-slate-400">
+                                                    <svg className="mx-auto mb-2" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+                                                    <p className="text-sm font-medium">No hay sedes registradas</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-4 mt-6">
+                                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
+                                            <button disabled={guardando} onClick={handleGuardarSedes} className={`flex-1 py-3.5 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md shadow-hx-purple/20 transition-all flex items-center justify-center gap-2 text-sm ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
+                                                {guardando ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Guardando...</>) : (<>Continuar <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg></>)}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 3: GRADOS */}
+                                {activeTab === 'grados' && (
+                                    <div className="max-w-2xl mx-auto animate-fade-in">
+                                        <div className="flex items-center gap-3 mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                            <div className="w-9 h-9 bg-hx-purple/10 rounded-xl flex items-center justify-center text-hx-purple shrink-0">
+                                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-700 text-sm">Grados Permitidos</p>
+                                                <p className="text-[11px] text-slate-400">Selecciona los grados en los que este docente puede enseñar</p>
                                             </div>
                                         </div>
 
-                                        <div className={`transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-                                            {/* Tabs de Sedes seleccionadas */}
-                                            {formSedes.length > 0 && (
-                                                <div className="flex gap-2 mb-4 bg-slate-100/50 p-2 rounded-2xl border border-slate-100">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                                            {grados.map(g => {
+                                                const activo = formGrados.includes(g.id_grado);
+                                                return (
+                                                    <div
+                                                        key={g.id_grado}
+                                                        onClick={() => toggleGrado(g.id_grado)}
+                                                        className={`cursor-pointer p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 text-center ${activo ? 'border-hx-purple bg-hx-purple/5 shadow-sm shadow-hx-purple/10' : 'border-slate-100 hover:border-slate-200 bg-white hover:shadow-sm'}`}
+                                                    >
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${activo ? 'bg-hx-purple text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                            <span className="font-black text-sm">{g.nombre_grado?.charAt(0) || g.id_grado}</span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 w-full">
+                                                            <p className={`font-bold text-xs truncate ${activo ? 'text-hx-purple' : 'text-slate-700'}`}>{g.nombre_grado || `Grado ${g.id_grado}`}</p>
+                                                            {g.nivel && <p className="text-[10px] text-slate-400 mt-0.5 truncate uppercase">{g.nivel}</p>}
+                                                        </div>
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors mt-1 ${activo ? 'border-hx-purple bg-hx-purple' : 'border-slate-200'}`}>
+                                                            {activo && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12" /></svg>}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {grados.length === 0 && (
+                                                <div className="col-span-full text-center py-8 text-slate-400">
+                                                    <svg className="mx-auto mb-2" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 14l9-5-9-5-9 5 9 5z" /></svg>
+                                                    <p className="text-sm font-medium">No hay grados registrados</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-4 mt-6">
+                                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
+                                            <button disabled={guardando} onClick={handleGuardarGrados} className={`flex-1 py-3.5 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md shadow-hx-purple/20 transition-all flex items-center justify-center gap-2 text-sm ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
+                                                {guardando ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Guardando...</>) : (<>Continuar <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg></>)}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 4: DISPONIBILIDAD */}
+                                {activeTab === 'disponibilidad' && (
+                                    <div className="space-y-4">
+                                        {/* Row de Sedes */}
+                                        {formSedes.length > 0 && (
+                                            <div className="mb-4">
+                                                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Sedes</label>
+                                                <div className="flex gap-2 flex-wrap bg-slate-100/50 p-2 rounded-2xl border border-slate-100">
                                                     {formSedes.map(sid => {
                                                         const sObj = sedes.find(s => s.id_sede === sid);
                                                         if (!sObj) return null;
@@ -908,165 +995,185 @@ export default function ProfesoresManager() {
                                                             <button
                                                                 key={sid}
                                                                 onClick={() => setActiveSede(sid)}
-                                                                className={`px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all ${activeSede === sid ? 'bg-hx-purple text-white shadow-md shadow-hx-purple/20' : 'bg-white text-slate-500 hover:text-hx-purple border border-slate-200 hover:border-hx-purple'}`}
+                                                                className={`px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all cursor-pointer ${activeSede === sid ? 'bg-hx-purple text-white shadow-md shadow-hx-purple/20' : 'bg-white text-slate-500 hover:text-hx-purple border border-slate-200 hover:border-hx-purple'} ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}
                                                             >
                                                                 {sObj.nombre_sede}
                                                             </button>
                                                         );
                                                     })}
                                                 </div>
-                                            )}
-
-                                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 bg-slate-200/50 rounded-xl flex items-center justify-center text-slate-500 shrink-0">
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 text-sm">Horario Personalizado</p>
-                                                        <p className="text-[11px] text-slate-400">Elige un modo y haz clic en la tabla para marcar bloques.</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex bg-slate-200/50 p-1 rounded-xl self-start xl:self-center">
-                                                    <button onClick={() => setModoPincel('disponible')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-2 ${modoPincel === 'disponible' ? 'bg-white text-hx-purple shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                        <div className={`w-2 h-2 rounded-full ${modoPincel === 'disponible' ? 'bg-hx-purple' : 'bg-slate-300'}`}></div> Modo Disponible
-                                                    </button>
-                                                    <button onClick={() => setModoPincel('preferido')} className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-2 ${modoPincel === 'preferido' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                                        <div className={`w-2 h-2 rounded-full ${modoPincel === 'preferido' ? 'bg-amber-400' : 'bg-slate-300'}`}></div> Modo Preferido
-                                                    </button>
-                                                </div>
                                             </div>
-                                            {/* Leyenda */}
-                                            <div className="flex items-center justify-between px-2">
-                                                <div className="flex items-center gap-5">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-5 h-5 bg-hx-purple rounded-md flex items-center justify-center text-white shadow-sm shadow-hx-purple/20">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                        </div>
-                                                        <span className="text-xs text-slate-600 font-bold">Disponible</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-5 h-5 bg-amber-400 rounded-md flex items-center justify-center text-white shadow-sm shadow-amber-400/20">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                                                        </div>
-                                                        <span className="text-xs text-slate-600 font-bold">Preferido</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-5 h-5 bg-red-50 border border-red-100 rounded-md flex items-center justify-center text-red-400">
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                        </div>
-                                                        <span className="text-xs text-slate-600 font-bold">No disponible</span>
+                                        )}
+
+                                        <div className={`transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+
+                                            <div className="flex flex-wrap items-center justify-between gap-4 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex bg-slate-200/50 p-1 rounded-lg">
+                                                        <button onClick={() => setModoPincel('disponible')} className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${modoPincel === 'disponible' ? 'bg-white text-hx-purple shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${modoPincel === 'disponible' ? 'bg-hx-purple' : 'bg-slate-300'}`}></div> Disponible
+                                                        </button>
+                                                        <button onClick={() => setModoPincel('preferido')} className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${modoPincel === 'preferido' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${modoPincel === 'preferido' ? 'bg-amber-400' : 'bg-slate-300'}`}></div> Preferido
+                                                        </button>
                                                     </div>
                                                 </div>
-
-                                                <button onClick={() => setDispoAll(false)} className="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-500 px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-sm" title="Limpiar todo">
-                                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                                                </button>
+                                                <div className="flex items-center gap-4">
+                                                    {/* Leyenda compacta */}
+                                                    <div className="hidden sm:flex items-center gap-3 text-[10px] font-bold text-slate-500">
+                                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-hx-purple"></div>Disp</div>
+                                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-amber-400"></div>Pref</div>
+                                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded border border-red-200 bg-red-50"></div>No Disp</div>
+                                                    </div>
+                                                    <button onClick={() => setDispoAll(false)} className="bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shadow-sm border border-slate-200 hover:border-red-200 font-bold text-[11px]" title="Limpiar todo">
+                                                        <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                        Limpiar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Contenedor de Turnos para evitar desbordamiento */}
-                                    {(() => {
-                                        // Construir la lista de turnos a mostrar:
-                                        // Si hay turnos del API úsalos, si no, extraer desde las disponibilidades/preferencias
-                                        let turnosRender = turnos.length > 0 ? turnos : [];
-                                        if (turnosRender.length === 0) {
-                                            const allEntries = [...formDispo, ...formPreferencia];
-                                            const idsUnicos = [...new Set(allEntries.map(x => x.id_turno))];
-                                            turnosRender = idsUnicos.map(id => ({ id_turno: id, nombre: `Turno ${id}` }));
-                                        }
-                                        // Si aún no hay nada (nuevo docente sin datos), crear un turno genérico
-                                        if (turnosRender.length === 0) {
-                                            turnosRender = [{ id_turno: 1, nombre: 'Turno General' }];
-                                        }
-                                        return (
-                                            <div className={`space-y-6 transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-                                                {turnosRender.map(turno => {
-                                                    // Bloques del API para este turno
-                                                    const bloquesTurno = bloques.filter(b => b.id_turno === turno.id_turno);
-                                                    // Usar: bloques del API si existen, si no generar desde grado-dia-config
-                                                    const maxFromDispo = Math.max(
-                                                        ...formDispo.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
-                                                        ...formPreferencia.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
-                                                        0
-                                                    );
-                                                    const maxBloques = Math.max(maxFromDispo, maxBloquesDia);
-                                                    const bloquesRender = bloquesTurno.length > 0
-                                                        ? bloquesTurno
-                                                        : Array.from({ length: maxBloques }, (_, i) => ({ numero_bloque: i + 1, id_bloque: `temp-${turno.id_turno}-${i}` }));
+                                        {/* Contenedor de Turnos y Toggle Total */}
+                                        {(() => {
+                                            // Construir la lista de turnos a mostrar
+                                            let turnosRender = turnos.length > 0 ? turnos : [];
+                                            if (turnosRender.length === 0) {
+                                                const allEntries = [...formDispo, ...formPreferencia];
+                                                const idsUnicos = [...new Set(allEntries.map(x => x.id_turno))];
+                                                turnosRender = idsUnicos.map(id => ({ id_turno: id, nombre: `Turno ${id}` }));
+                                            }
+                                            if (turnosRender.length === 0) {
+                                                turnosRender = [{ id_turno: 1, nombre: 'Turno General' }];
+                                            }
 
-                                                    return (
-                                                        <div key={turno.id_turno} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                                            <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
-                                                                <div className="w-2 h-2 rounded-full bg-hx-purple"></div>
-                                                                <h3 className="font-extrabold text-slate-700 text-xs uppercase tracking-widest">{turno.nombre}</h3>
-                                                            </div>
-                                                            <div className="overflow-x-auto">
-                                                                <div className="min-w-full p-2 sm:p-4">
-                                                                    <table className="w-full border-collapse text-xs">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th className="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest w-16 bg-white border-r border-slate-100">Blq</th>
-                                                                                {dias.map(d => <th key={d.id_dia} className="p-3 text-center text-[10px] font-black text-slate-600 bg-white min-w-[50px]">{d.nombre_dia?.slice(0, 3).toUpperCase() || d.nombre_dia}</th>)}
+                                            // Asegurarnos de tener un turno activo
+                                            const currentTurnoId = activeTurnoTab || turnosRender[0].id_turno;
 
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {bloquesRender.map((b, bi) => (
-                                                                                <tr key={b.id_bloque} className={bi % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                                                                    <td className="p-3 text-sm font-black text-slate-400 whitespace-nowrap text-center bg-slate-50 border-r border-slate-100">
-                                                                                        {b.numero_bloque}
-                                                                                    </td>
-                                                                                    {dias.map(d => {
-                                                                                        const isDispo = formDispo.some(x => x.id_dia === d.id_dia && x.id_turno === turno.id_turno && x.nro_bloque === b.numero_bloque && x.id_sede === activeSede);
-                                                                                        const isPref = formPreferencia.some(x => x.id_dia === d.id_dia && x.id_turno === turno.id_turno && x.nro_bloque === b.numero_bloque && x.id_sede === activeSede);
+                                            return (
+                                                <div className="space-y-4">
+                                                    {/* Header de Turnos + Toggle Total */}
+                                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 
-                                                                                        return (
-                                                                                            <td
-                                                                                                key={d.id_dia}
-                                                                                                onClick={() => toggleDispo(d.id_dia, turno.id_turno, b.numero_bloque)}
-                                                                                                className="p-2 text-center cursor-pointer"
-                                                                                            >
-                                                                                                <div className={`mx-auto w-10 h-8 rounded-xl flex items-center justify-center transition-colors border ${isPref
-                                                                                                    ? 'bg-amber-400 border-transparent shadow-md shadow-amber-400/20 text-white'
-                                                                                                    : isDispo
-                                                                                                        ? 'bg-hx-purple border-transparent shadow-md shadow-hx-purple/20 text-white'
-                                                                                                        : 'bg-red-50 hover:bg-red-100 border-red-100 text-red-400'
-                                                                                                    }`}>
-                                                                                                    {isPref ? (
-                                                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                                                                                                    ) : isDispo ? (
-                                                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                                                    ) : (
-                                                                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </td>
-                                                                                        );
-                                                                                    })}
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
+                                                        {/* Tabs de Turnos */}
+                                                        <div className="flex gap-2 overflow-x-auto pb-1 flex-1 w-full sm:w-auto">
+                                                            {turnosRender.length > 1 && turnosRender.map(t => (
+                                                                <button
+                                                                    key={t.id_turno}
+                                                                    onClick={() => setActiveTurnoTab(t.id_turno)}
+                                                                    className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${currentTurnoId === t.id_turno ? 'bg-hx-purple text-white shadow-md shadow-hx-purple/20' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'} ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}
+                                                                >
+                                                                    {t.nombre}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Toggle Total (Movido a esta fila) */}
+                                                        <div className="flex items-center gap-2 bg-hx-purple/5 px-3 py-1.5 rounded-lg border border-hx-purple/20 shrink-0">
+                                                            <span className="font-bold text-hx-purple text-xs">Disponibilidad Total</span>
+                                                            <div
+                                                                onClick={() => {
+                                                                    setEsDisponibilidadTotal(!esDisponibilidadTotal);
+                                                                    if (!esDisponibilidadTotal) {
+                                                                        setFormDispo([]);
+                                                                        setFormPreferencia([]);
+                                                                    }
+                                                                }}
+                                                                className={`w-8 h-4 rounded-full transition-colors cursor-pointer relative shrink-0 ${esDisponibilidadTotal ? 'bg-hx-purple' : 'bg-slate-300'}`}
+                                                            >
+                                                                <div className={`absolute top-0.5 left-0.5 bg-white w-3 h-3 rounded-full transition-transform ${esDisponibilidadTotal ? 'translate-x-4' : 'translate-x-0'}`}></div>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    })()}
+                                                    </div>
 
-                                    <div className="flex gap-4 pt-4 border-t border-slate-100">
-                                        <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
-                                        <button disabled={guardando} onClick={handleGuardarDispo} className={`flex-1 py-3 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md transition-all ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
-                                            {guardando ? 'Finalizando...' : 'Finalizar y Guardar'}
-                                        </button>
+                                                    <div className={`transition-all duration-300 ${esDisponibilidadTotal ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+
+                                                        {turnosRender.map(turno => {
+                                                            if (turno.id_turno !== currentTurnoId) return null;
+                                                            // Bloques del API para este turno
+                                                            const bloquesTurno = bloques.filter(b => b.id_turno === turno.id_turno);
+                                                            // Usar: bloques del API si existen, si no generar desde grado-dia-config
+                                                            const maxFromDispo = Math.max(
+                                                                ...formDispo.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
+                                                                ...formPreferencia.filter(x => x.id_turno === turno.id_turno).map(x => x.nro_bloque || 0),
+                                                                0
+                                                            );
+                                                            const maxBloques = Math.max(maxFromDispo, maxBloquesDia);
+                                                            const bloquesRender = bloquesTurno.length > 0
+                                                                ? bloquesTurno
+                                                                : Array.from({ length: maxBloques }, (_, i) => ({ numero_bloque: i + 1, id_bloque: `temp-${turno.id_turno}-${i}` }));
+
+                                                            return (
+                                                                <div key={turno.id_turno} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                                                                    <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                                                                        <div className="w-2 h-2 rounded-full bg-hx-purple"></div>
+                                                                        <h3 className="font-extrabold text-slate-700 text-xs uppercase tracking-widest">{turno.nombre}</h3>
+                                                                    </div>
+                                                                    <div className="overflow-x-auto">
+                                                                        <div className="min-w-full p-2 sm:p-4">
+                                                                            <table className="w-full border-collapse text-xs">
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th className="p-3 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest w-16 bg-white border-r border-slate-100">Blq</th>
+                                                                                        {dias.map(d => <th key={d.id_dia} className="p-3 text-center text-[10px] font-black text-slate-600 bg-white min-w-[50px]">{d.nombre_dia?.slice(0, 3).toUpperCase() || d.nombre_dia}</th>)}
+
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {bloquesRender.map((b, bi) => (
+                                                                                        <tr key={b.id_bloque} className={bi % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                                                                            <td className="p-3 text-sm font-black text-slate-400 whitespace-nowrap text-center bg-slate-50 border-r border-slate-100">
+                                                                                                {b.numero_bloque}
+                                                                                            </td>
+                                                                                            {dias.map(d => {
+                                                                                                const isDispo = formDispo.some(x => x.id_dia === d.id_dia && x.id_turno === turno.id_turno && x.nro_bloque === b.numero_bloque && x.id_sede === activeSede);
+                                                                                                const isPref = formPreferencia.some(x => x.id_dia === d.id_dia && x.id_turno === turno.id_turno && x.nro_bloque === b.numero_bloque && x.id_sede === activeSede);
+
+                                                                                                return (
+                                                                                                    <td
+                                                                                                        key={d.id_dia}
+                                                                                                        onClick={() => toggleDispo(d.id_dia, turno.id_turno, b.numero_bloque)}
+                                                                                                        className="p-2 text-center cursor-pointer"
+                                                                                                    >
+                                                                                                        <div className={`mx-auto w-10 h-8 rounded-xl flex items-center justify-center transition-colors border ${isPref
+                                                                                                            ? 'bg-amber-400 border-transparent shadow-md shadow-amber-400/20 text-white'
+                                                                                                            : isDispo
+                                                                                                                ? 'bg-hx-purple border-transparent shadow-md shadow-hx-purple/20 text-white'
+                                                                                                                : 'bg-red-50 hover:bg-red-100 border-red-100 text-red-400'
+                                                                                                            }`}>
+                                                                                                            {isPref ? (
+                                                                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                                                                                                            ) : isDispo ? (
+                                                                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                                                                            ) : (
+                                                                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    </td>
+                                                                                                );
+                                                                                            })}
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        <div className="flex gap-4 pt-4 border-t border-slate-100">
+                                            <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer">Cancelar</button>
+                                            <button disabled={guardando} onClick={handleGuardarDispo} className={`flex-1 py-3 bg-hx-purple hover:bg-hx-purple/90 text-white font-bold rounded-xl shadow-md transition-all ${guardando ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}>
+                                                {guardando ? 'Finalizando...' : 'Finalizar y Guardar'}
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

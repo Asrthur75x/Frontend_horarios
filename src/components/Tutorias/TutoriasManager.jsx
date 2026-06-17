@@ -2,15 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:8000/api';
 
-// Colores variados para cada grado (como pidió el usuario)
 const GRADO_COLORS = [
-    '#51B4E8', // hx-blue
-    '#8b5cf6', // violet
-    '#f43f5e', // rose
-    '#10b981', // emerald
-    '#f59e0b', // amber
-    '#06b6d4', // cyan
-    '#ec4899', // pink
+    'var(--color-hx-purple)'
 ];
 
 // Tarjeta con diseño exacto a la referencia (Carpeta oscura con borde negro y fondo degradado)
@@ -186,28 +179,41 @@ export default function TutoriasManager() {
 
             {/* ── Banner ── */}
             <div className="flex flex-col md:flex-row gap-6 mb-2">
-                <div className="md:w-2/3 bg-gradient-to-r from-hx-blue via-blue-600 to-indigo-700 rounded-[24px] p-8 text-white shadow-md relative overflow-hidden flex flex-col justify-center min-h-[180px]">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/20 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
-                    <div className="relative z-10 flex justify-between items-start">
+                <div className="md:w-2/3 bg-hx-purple/10 rounded-[24px] p-8 shadow-md relative overflow-hidden flex flex-col justify-center min-h-[180px] border border-hx-purple/70">
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
                         <div className="max-w-md">
-                            <h2 className="text-2xl md:text-3xl font-black mb-2 tracking-tight drop-shadow-sm">Asignación de Tutorías</h2>
-                            <p className="text-white/90 text-[13px] font-medium leading-relaxed max-w-sm drop-shadow-sm">
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+                                Asignación de Tutorías
+                            </h2>
+                            <p className="text-slate-500 text-[13px] font-medium mb-6 leading-relaxed max-w-sm drop-shadow-sm">
                                 Asigna un docente tutor a cada sección. Organizado por grados y colores para mejor identificación.
                             </p>
                         </div>
                     </div>
                 </div>
-                <div className="md:w-1/3 bg-white border border-slate-200 rounded-[24px] p-6 min-h-[180px] flex flex-col">
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-4">Resumen</p>
-                    <div className="grid grid-cols-2 gap-3 flex-1">
-                        <div className="flex flex-col justify-between rounded-2xl p-5 bg-blue-50">
-                            <p className="text-[12px] font-semibold text-blue-400">Secciones</p>
-                            <p className="text-3xl font-black text-hx-blue">{secciones.length}</p>
+
+                <div className="md:w-1/3 bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-6 min-h-[180px] flex flex-col relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-slate-400 text-[11px] font-black uppercase tracking-widest mb-1">Total Secciones</p>
+                            <div className="flex items-baseline gap-2">
+                                <h3 className="text-4xl font-black text-slate-800 tracking-tighter">{secciones.length}</h3>
+                            </div>
                         </div>
-                        <div className="flex flex-col justify-between rounded-2xl p-5 bg-green-50">
-                            <p className="text-[12px] font-semibold text-green-500">Con Tutor</p>
-                            <p className="text-3xl font-black text-green-600">{tutorias.length}</p>
+                        <div className="w-12 h-12 rounded-[14px] bg-hx-purple/10 text-hx-purple flex items-center justify-center border border-hx-purple/20 shadow-sm">
+                            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                        </div>
+                    </div>
+
+                    <div className="mt-auto bg-purple-50 rounded-xl p-3.5 border border-purple-100/60 flex gap-3 items-start">
+                        <div className="text-hx-purple bg-white p-1 rounded-lg shadow-sm border border-purple-100 mt-0.5 flex-shrink-0">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg>
+                        </div>
+                        <div>
+                            <p className="text-purple-800 text-[12px] font-bold mb-0.5">Con Tutor</p>
+                            <p className="text-purple-700/80 text-[11px] font-medium leading-relaxed">
+                                Tienes {tutorias.length} secciones con tutor asignado.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -285,7 +291,7 @@ export default function TutoriasManager() {
                                                 key={sec.id_seccion}
                                                 sec={sec}
                                                 tutor={getTutorDeSeccion(sec.id_seccion)}
-                                                gradoColor="#94a3b8"
+                                                gradoColor="var(--color-hx-purple)"
                                                 sedeNombre={sedeNombre}
                                                 onAsignar={abrirModal}
                                                 onQuitar={handleQuitarTutor}
@@ -313,7 +319,7 @@ export default function TutoriasManager() {
                             <div>
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight">Elegir Tutor</h2>
                                 <p className="text-[13px] text-slate-500 mt-1 font-medium">
-                                    Para <span className="font-bold text-[#51B4E8]">{selectedSeccion.nombre || `Sección ${selectedSeccion.id_seccion}`}</span>
+                                    Para <span className="font-bold text-hx-purple">{selectedSeccion.nombre || `Sección ${selectedSeccion.id_seccion}`}</span>
                                 </p>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer">
@@ -323,7 +329,7 @@ export default function TutoriasManager() {
 
                         <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-2 bg-slate-50/50">
                             {guardando && (
-                                <div className="flex items-center justify-center gap-2 mb-4 px-4 py-3 rounded-2xl text-[13px] font-bold bg-[#51B4E8]/10 text-[#51B4E8]">
+                                <div className="flex items-center justify-center gap-2 mb-4 px-4 py-3 rounded-2xl text-[13px] font-bold bg-hx-purple/10 text-hx-purple">
                                     <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"></div>
                                     Guardando asignación...
                                 </div>
@@ -335,14 +341,14 @@ export default function TutoriasManager() {
                                         key={prof.id_profesor}
                                         onClick={() => handleAsignarTutor(prof.id_profesor)}
                                         className="flex items-center gap-4 p-4 rounded-[20px] border-2 cursor-pointer transition-all bg-white hover:shadow-md"
-                                        style={isActual ? { borderColor: '#51B4E8', backgroundColor: '#eff6ff' } : { borderColor: '#f1f5f9' }}
+                                        style={isActual ? { borderColor: '#10b981', backgroundColor: '#ecfdf5' } : { borderColor: '#f1f5f9' }}
                                     >
                                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-sm flex-shrink-0"
-                                            style={{ backgroundColor: isActual ? '#51B4E8' : '#cbd5e1' }}>
+                                            style={{ backgroundColor: isActual ? '#10b981' : '#cbd5e1' }}>
                                             {prof.nombre_profesor.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-[15px] truncate" style={{ color: isActual ? '#51B4E8' : '#334155' }}>
+                                            <p className="font-bold text-[15px] truncate" style={{ color: isActual ? '#10b981' : '#334155' }}>
                                                 {prof.nombre_profesor}
                                             </p>
                                             <p className="text-[12px] text-slate-400 font-medium mt-0.5">

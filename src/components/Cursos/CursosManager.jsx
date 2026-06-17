@@ -62,6 +62,12 @@ const CursoBookCard = ({ curso, area, onEdit, onDelete, index }) => {
                             </h3>
                         </div>
 
+                        {curso.requiere_espacio_unico && (
+                            <div className="text-[8px] font-black uppercase tracking-widest mb-1.5 opacity-90" style={{ color: c.text }}>
+                                ESPACIO ÚNICO
+                            </div>
+                        )}
+
                         <div
                             className="text-[10px] font-bold mb-2 md:mb-3 border-t border-white/20 pt-2 w-1/2"
                             style={{ color: c.text, opacity: 0.6 }}
@@ -119,6 +125,7 @@ export default function CursosManager() {
     const [error, setError] = useState(null);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isModalTutoriaOpen, setIsModalTutoriaOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
     const [guardando, setGuardando] = useState(false);
@@ -190,17 +197,23 @@ export default function CursosManager() {
         setEditId(curso.id_curso);
         setNuevoCurso({
             nombre_curso: curso.nombre_curso || '',
-            id_area: curso.id_area || ''
+            id_area: curso.id_area || '',
+            requiere_espacio_unico: curso.requiere_espacio_unico || false
         });
         setIsModalOpen(true);
     };
 
     // ── Eliminar ──
-    const eliminarCurso = (id) => {
+    const eliminarCurso = async (id) => {
         const confirmacion = window.confirm("¿Seguro que deseas eliminar este curso?");
         if (confirmacion) {
-            setCursos(cursos.filter(c => c.id_curso !== id));
-            window.dispatchEvent(new CustomEvent('horarix_data_updated'));
+            try {
+                await fetch(`${API_BASE}/cursos/${id}`, { method: 'DELETE' });
+                setCursos(cursos.filter(c => c.id_curso !== id));
+                window.dispatchEvent(new CustomEvent('horarix_data_updated'));
+            } catch (err) {
+                alert(`Error al eliminar: ${err.message}`);
+            }
         }
     };
 
@@ -209,15 +222,21 @@ export default function CursosManager() {
         if (e.key === 'Enter') {
             e.preventDefault();
             const val = inputCursoVirtual.trim();
-            if (val && !cursosNuevos.includes(val)) {
-                setCursosNuevos([...cursosNuevos, val]);
+            if (val && !cursosNuevos.some(c => c.nombre === val)) {
+                setCursosNuevos([...cursosNuevos, { nombre: val, requiere_espacio_unico: false }]);
                 setInputCursoVirtual('');
             }
         }
     };
 
     const removeCursoFromList = (cursoToRemove) => {
-        setCursosNuevos(cursosNuevos.filter(c => c !== cursoToRemove));
+        setCursosNuevos(cursosNuevos.filter(c => c.nombre !== cursoToRemove));
+    };
+
+    const toggleEspacioUnicoCurso = (nombre) => {
+        setCursosNuevos(cursosNuevos.map(c =>
+            c.nombre === nombre ? { ...c, requiere_espacio_unico: !c.requiere_espacio_unico } : c
+        ));
     };
 
     // ── Guardar curso(s) ──
@@ -229,21 +248,27 @@ export default function CursosManager() {
             if (isEditing) {
                 const payload = {
                     nombre_curso: nuevoCurso.nombre_curso,
-                    id_area: nuevoCurso.id_area ? parseInt(nuevoCurso.id_area) : null
+                    id_area: nuevoCurso.id_area ? parseInt(nuevoCurso.id_area) : null,
+                    requiere_espacio_unico: nuevoCurso.requiere_espacio_unico || false
                 };
 
                 // Optimistic Update
                 setCursos(cursos.map(c => c.id_curso === editId ? { ...c, ...payload } : c));
 
-                // Omitiendo llamada real para evitar errores si backend no está completo
-                // fetch...
+                // API Call for update
+                await fetch(`${API_BASE}/cursos/${editId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
                 window.dispatchEvent(new CustomEvent('horarix_data_updated'));
             } else {
                 // Si el usuario escribió algo y no dio Enter, lo agregamos de paso
                 let listToSave = [...cursosNuevos];
                 const val = inputCursoVirtual.trim();
-                if (val && !listToSave.includes(val)) {
-                    listToSave.push(val);
+                if (val && !listToSave.some(c => c.nombre === val)) {
+                    listToSave.push({ nombre: val, requiere_espacio_unico: false });
                 }
 
                 if (listToSave.length === 0) {
@@ -253,15 +278,19 @@ export default function CursosManager() {
                 }
 
                 // Batch creation (Simulado optimista o real)
-                const nuevosCreados = listToSave.map((nombre, i) => ({
+                const nuevosCreados = listToSave.map((item, i) => ({
                     id_curso: Math.floor(Math.random() * 10000) + i,
-                    nombre_curso: nombre,
+                    nombre_curso: item.nombre,
                     id_area: nuevoCurso.id_area ? parseInt(nuevoCurso.id_area) : null
                 }));
 
                 // Promise.all para enviar cada curso al backend
-                await Promise.all(nuevosCreados.map(async (c) => {
-                    const payload = { nombre_curso: c.nombre_curso, id_area: c.id_area };
+                await Promise.all(listToSave.map(async (item) => {
+                    const payload = {
+                        nombre_curso: item.nombre,
+                        id_area: nuevoCurso.id_area ? parseInt(nuevoCurso.id_area) : null,
+                        requiere_espacio_unico: item.requiere_espacio_unico || false
+                    };
                     try {
                         await fetch(`${API_BASE}/cursos`, {
                             method: 'POST',
@@ -289,6 +318,7 @@ export default function CursosManager() {
     // --- Métricas para el panel derecho ---
     const totalCursos = cursos.length;
     const cursosSinArea = cursos.filter(c => !c.id_area).length;
+    const cursosEspacioUnico = cursos.filter(c => c.requiere_espacio_unico).length;
 
     let maxAreaName = 'Ninguna';
     let maxAreaCount = 0;
@@ -323,6 +353,58 @@ export default function CursosManager() {
         c.nombre_curso?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // --- Habilitar Tutoría ---
+    const existeTutoria = cursos.some(c => c.nombre_curso && c.nombre_curso.includes("Tutoría"));
+
+    const handleConfigurarTutoria = async (tipo) => {
+        setGuardando(true);
+        const nombreDelCurso = tipo === 'oficial' ? 'Tutoría' : 'Tutoría Psicológica';
+
+        try {
+            // 1. Buscar o crear área "Desarrollo Personal"
+            let areaId = null;
+            const areaExistente = areas.find(a =>
+                (a.nombre_area || a.nombre) === "Desarrollo Personal" || (a.nombre_area || a.nombre) === "Tutoría"
+            );
+
+            if (areaExistente) {
+                areaId = areaExistente.id_area;
+            } else {
+                const resArea = await fetch(`${API_BASE}/areas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre: "Desarrollo Personal" })
+                });
+                if (!resArea.ok) throw new Error("Error al crear el área");
+                const newArea = await resArea.json();
+                areaId = newArea.id_area || newArea.id;
+            }
+
+            // 2. Crear curso
+            const resCurso = await fetch(`${API_BASE}/cursos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre_curso: nombreDelCurso,
+                    id_area: areaId,
+                    requiere_espacio_unico: false
+                })
+            });
+
+            if (!resCurso.ok) throw new Error("Error al crear el curso");
+
+            // 3. Recargar datos
+            await fetchDatos();
+            window.dispatchEvent(new Event('horarix_data_updated'));
+            setIsModalTutoriaOpen(false);
+
+        } catch (err) {
+            alert(`Error al habilitar Tutoría: ${err.message}`);
+        } finally {
+            setGuardando(false);
+        }
+    };
+
     return (
         <div className="w-full space-y-8 animate-fade-in relative">
 
@@ -339,12 +421,24 @@ export default function CursosManager() {
                                 Añade los cursos que se dictarán en tu colegio y conéctalas con el área a la que pertenecen.
                             </p>
 
-                            <button
-                                onClick={abrirModalNueva}
-                                className="bg-hx-purple text-white hover:bg-hx-purple/80 font-extrabold py-2.5 px-6 rounded-xl shadow-[0_4px_12px_rgba(121,14,236,0.3)] hover:shadow-[0_6px_16px_rgba(121,14,236,0.4)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 text-sm w-max cursor-pointer">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
-                                Añadir Nuevos Cursos
-                            </button>
+                            <div className="flex flex-wrap items-center gap-3">
+                                {existeTutoria ? (
+                                    <button
+                                        onClick={abrirModalNueva}
+                                        className="bg-hx-purple text-white hover:bg-hx-purple/80 font-extrabold py-2.5 px-6 rounded-xl shadow-[0_4px_12px_rgba(121,14,236,0.3)] hover:shadow-[0_6px_16px_rgba(121,14,236,0.4)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 text-sm w-max cursor-pointer">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
+                                        Añadir Nuevos Cursos
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsModalTutoriaOpen(true)}
+                                        className="bg-hx-purple text-white hover:bg-hx-purple/80 font-extrabold py-2.5 px-6 rounded-xl shadow-[0_4px_12px_rgba(121,14,236,0.3)] hover:shadow-[0_6px_16px_rgba(121,14,236,0.4)] hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-2 text-sm w-max cursor-pointer"
+                                        title="Primero configura el curso de Tutoría">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                        Configurar Tutoría
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Imagen Ilustrativa a la derecha */}
@@ -390,11 +484,11 @@ export default function CursosManager() {
                             </div>
                         </div>
 
-                        {/* Columna 2: Huérfanos */}
+                        {/* Columna 2: Espacio Único */}
                         <div className="rounded-xl p-3 flex flex-col justify-center shadow-sm">
-                            <p className="text-hx-purple text-[10px] font-black uppercase tracking-widest mb-1">Sin Asignar</p>
+                            <p className="text-hx-purple text-[10px] font-black uppercase tracking-widest mb-1">Espacio Único</p>
                             <div className="flex items-end gap-1.5 mt-1">
-                                <span className="text-2xl font-black text-black leading-none">{cursosSinArea}</span>
+                                <span className="text-2xl font-black text-black leading-none">{cursosEspacioUnico}</span>
                                 <span className="text-black/80 text-[10px] font-bold mb-0.5">cursos</span>
                             </div>
                         </div>
@@ -486,7 +580,7 @@ export default function CursosManager() {
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-fade-in p-4">
                     <div
-                        className="bg-white rounded-3xl shadow-xl w-full max-w-lg border border-slate-100 overflow-hidden transform animate-slide-up"
+                        className="bg-white rounded-3xl shadow-xl w-full max-w-2xl border border-slate-100 overflow-hidden transform animate-slide-up"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -567,8 +661,8 @@ export default function CursosManager() {
                                                     type="button"
                                                     onClick={() => {
                                                         const val = inputCursoVirtual.trim();
-                                                        if (val && !cursosNuevos.includes(val)) {
-                                                            setCursosNuevos([...cursosNuevos, val]);
+                                                        if (val && !cursosNuevos.some(c => c.nombre === val)) {
+                                                            setCursosNuevos([...cursosNuevos, { nombre: val, requiere_espacio_unico: false }]);
                                                             setInputCursoVirtual('');
                                                         }
                                                     }}
@@ -582,22 +676,75 @@ export default function CursosManager() {
 
                                             {/* Lista de chips para cursos nuevos */}
                                             {cursosNuevos.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                <div className="flex flex-col gap-2.5 pt-3 max-h-[35vh] overflow-y-auto pr-1 stylish-scroll">
                                                     {cursosNuevos.map(c => (
-                                                        <div key={c} className="inline-flex items-center gap-1.5 bg-hx-purple/10 text-hx-purple font-bold text-xs px-3 py-1.5 rounded-lg border border-hx-purple/20 animate-fade-in">
-                                                            {c}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeCursoFromList(c)}
-                                                                className="hover:bg-hx-purple/20 p-0.5 rounded-full text-hx-purple transition-colors cursor-pointer">
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                                                            </button>
+                                                        <div key={c.nombre} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 border-l-4 transition-all animate-fade-in ${c.requiere_espacio_unico
+                                                                ? 'bg-purple-50 border-hx-purple/30 border-l-hx-purple'
+                                                                : 'bg-hx-purple/5 border-hx-purple/15 border-l-hx-purple/50'
+                                                            }`}>
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <div className="w-7 h-7 rounded-lg bg-hx-purple/15 flex items-center justify-center flex-shrink-0">
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-hx-purple)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-800 truncate">{c.nombre}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                                <span className={`text-[10px] font-bold whitespace-nowrap ${c.requiere_espacio_unico ? 'text-hx-purple' : 'text-slate-400'}`}>Espacio Único</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => toggleEspacioUnicoCurso(c.nombre)}
+                                                                    className={`relative w-11 h-6 rounded-full transition-colors duration-300 cursor-pointer flex-shrink-0 ${c.requiere_espacio_unico ? 'bg-hx-purple' : 'bg-slate-300'
+                                                                        }`}
+                                                                    title="Requiere espacio único (aula exclusiva)"
+                                                                >
+                                                                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${c.requiere_espacio_unico ? 'translate-x-5' : 'translate-x-0'
+                                                                        }`}></div>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeCursoFromList(c.nombre)}
+                                                                    className="hover:bg-red-100 p-1.5 rounded-full text-slate-400 hover:text-red-500 transition-colors cursor-pointer flex-shrink-0">
+                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {/* Toggle: Requiere Espacio Único (solo en edición individual) */}
+                            {isEditing && nuevoCurso.id_area && (
+                                <div className="pt-4 border-t border-slate-100 animate-fade-in">
+                                    <label className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider mb-2 block">
+                                        Configuración
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNuevoCurso({ ...nuevoCurso, requiere_espacio_unico: !nuevoCurso.requiere_espacio_unico })}
+                                        className={`w-full p-3 rounded-xl border-2 flex items-center justify-between transition-all cursor-pointer ${nuevoCurso.requiere_espacio_unico
+                                                ? 'border-hx-purple bg-purple-50 shadow-sm'
+                                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${nuevoCurso.requiere_espacio_unico ? 'bg-hx-purple text-white' : 'bg-slate-100 text-slate-400'
+                                                }`}>
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                                            </div>
+                                            <div className="text-left">
+                                                <span className={`text-sm font-bold block ${nuevoCurso.requiere_espacio_unico ? 'text-hx-purple' : 'text-slate-700'}`}>Requiere Espacio Único</span>
+                                                <span className="text-[11px] text-slate-400 font-medium">Necesita un aula o laboratorio exclusivo</span>
+                                            </div>
+                                        </div>
+                                        {/* Switch visual */}
+                                        <div className={`w-10 h-6 rounded-full p-0.5 transition-colors ${nuevoCurso.requiere_espacio_unico ? 'bg-hx-purple' : 'bg-slate-200'}`}>
+                                            <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${nuevoCurso.requiere_espacio_unico ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                        </div>
+                                    </button>
                                 </div>
                             )}
 
@@ -631,6 +778,55 @@ export default function CursosManager() {
                 </div>
             )}
 
+            {/* Modal de Configuración de Tutoría */}
+            {isModalTutoriaOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsModalTutoriaOpen(false)}></div>
+                    <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden relative z-10 animate-fade-in flex flex-col border border-slate-100">
+                        {/* Cabecera */}
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-hx-purple/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-hx-purple/10 flex items-center justify-center text-hx-purple">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 tracking-tight">Configurar Tutoría</h3>
+                            </div>
+                            <button onClick={() => setIsModalTutoriaOpen(false)} className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer shadow-sm border border-slate-100">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-slate-600 font-medium leading-relaxed mb-2">
+                                Para configurar correctamente el horario de este curso, responde la siguiente pregunta:
+                            </p>
+                            <h4 className="text-[13px] font-black text-hx-purple uppercase tracking-wider text-center">¿Quién dictará este curso?</h4>
+
+                            <div className="flex flex-col gap-3 mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleConfigurarTutoria('oficial')}
+                                    disabled={guardando}
+                                    className="text-left p-4 rounded-xl bg-white border-2 border-slate-200 hover:border-hx-purple hover:bg-purple-50 transition-all cursor-pointer group flex flex-col items-start relative overflow-hidden disabled:opacity-50"
+                                >
+                                    <span className="font-black text-slate-800 text-base group-hover:text-hx-purple transition-colors">Solo el Encargado del Aula</span>
+                                    <span className="text-xs text-slate-500 font-medium mt-1">El sistema obligará a que el Tutor asignado de la sección dicte este curso.</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => handleConfigurarTutoria('normal')}
+                                    disabled={guardando}
+                                    className="text-left p-4 rounded-xl bg-white border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all cursor-pointer group flex flex-col items-start relative overflow-hidden disabled:opacity-50"
+                                >
+                                    <span className="font-black text-slate-800 text-base group-hover:text-slate-900">Tiene otro docente a cargo</span>
+                                    <span className="text-xs text-slate-500 font-medium mt-1">El curso será tratado como un curso normal (ideal para un Psicólogo).</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

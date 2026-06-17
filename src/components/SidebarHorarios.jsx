@@ -34,7 +34,7 @@ export default function SidebarHorarios() {
     };
 
     const MenuItem = ({ path, label, icon }) => {
-        const isActive = currentPath.startsWith(path);
+        const isActive = path === '/horarios' ? currentPath === '/horarios' : currentPath.startsWith(path);
 
         return (
             <li className="relative mb-1">
@@ -79,10 +79,22 @@ export default function SidebarHorarios() {
                 <ul className="flex flex-col relative flex-shrink-0">
                     <MenuItem
                         path="/horarios"
-                        label="Generar Horario"
+                        label="Por Secciones"
                         icon={
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        }
+                    />
+                    <MenuItem
+                        path="/horarios/profesores"
+                        label="Por Profesores"
+                        icon={
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                         }
                     />
